@@ -15,6 +15,13 @@ from ops.model import ActiveStatus, WaitingStatus
 
 MIMIR_PORT = 9009
 MIMIR_CONFIG_FILE = "/etc/mimir/config.yaml"
+MIMIR_DIRS = {
+    "bucket_store": "/tmp/mimir/tsdb-sync",
+    "data": "/tmp/mimir/data/tsdb",
+    "tsdb": "/tmp/mimir/tsdb",
+    "compactor": "/tmp/mimir/compactor",
+    "rules": "/tmp/mimir/rules"
+}
 logger = logging.getLogger(__name__)
 
 
@@ -77,17 +84,17 @@ class MimirCharm(CharmBase):
             "blocks_storage": {
                 "backend": "filesystem",
                 "bucket_store": {
-                        "sync_dir": "/tmp/mimir/tsdb-sync"
+                        "sync_dir": MIMIR_DIRS["bucket_store"]
                 },
                 "filesystem": {
-                        "dir": "/tmp/mimir/data/tsdb"
+                        "dir": MIMIR_DIRS["data"]
                 },
                 "tsdb": {
-                    "dir": "/tmp/mimir/tsdb"
+                    "dir": MIMIR_DIRS["tsdb"]
                 }
             },
             "compactor": {
-                "data_dir": "/tmp/mimir/compactor",
+                "data_dir": MIMIR_DIRS["compactor"],
                 "sharding_ring": {
                     "kvstore": {
                         "store": "memberlist"
@@ -114,7 +121,7 @@ class MimirCharm(CharmBase):
             "ruler_storage": {
                 "backend": "local",
                 "local": {
-                    "directory": "/tmp/mimir/rules"
+                    "directory": MIMIR_DIRS["rules"]
                 }
             },
             "server": {
