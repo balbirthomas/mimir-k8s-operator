@@ -13,6 +13,7 @@ from ops.framework import StoredState
 from ops.main import main
 from ops.model import ActiveStatus, WaitingStatus
 
+from charms.grafana_k8s.v0.grafana_source import GrafanaSourceProvider
 from charms.prometheus_k8s.v0.prometheus_remote_write import PrometheusRemoteWriteProvider
 
 MIMIR_PORT = 9009
@@ -37,6 +38,9 @@ class MimirCharm(CharmBase):
 
         self.remote_write_provider = PrometheusRemoteWriteProvider(
             self, endpoint_port=MIMIR_PORT, endpoint_path=MIMIR_PUSH_PATH
+        )
+        self.grafana_source_provider = GrafanaSourceProvider(
+            self, source_type="prometheus", source_port="9009"
         )
 
         self.framework.observe(self.on.mimir_pebble_ready, self._on_mimir_pebble_ready)
