@@ -37,6 +37,7 @@ class MimirCharm(CharmBase):
     def _on_mimir_pebble_ready(self, event):
         """Define and start a workload using the Pebble API.
         """
+        self._create_mimir_dirs()
         # Set the mimir configuration
         self._set_mimir_config()
 
@@ -77,6 +78,17 @@ class MimirCharm(CharmBase):
         mimir_config = self._mimir_config()
         container.push(MIMIR_CONFIG_FILE, mimir_config, make_dirs=True)
         logger.info("Set new Mimir configuration")
+
+    def _create_mimir_dirs(self):
+        container = self.unit.get_container(self._name)
+
+        if not container.can_connect():
+            self.unit.status = WaitingStatus("Waiting for Pebble ready")
+            return
+
+        for _, path in MIMIR_DIRS.items():
+            if not container.exists(path):
+                container.make_dir(path, make_parents=True)
 
     def _mimir_config(self) -> str:
         config = {
