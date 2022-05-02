@@ -1,17 +1,47 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-name: mimir
-display-name: |
-  TEMPLATE-TODO: fill out a display name for the Charmcraft store
+name: mimir-k8s
+display-name: Mimir
 description: |
-  TEMPLATE-TODO: fill out the charm's description
-summary: |
-  TEMPLATE-TODO: fill out the charm's summary
+  Mimir is a scalable, multi-tenant, highly available
+  time series database for Metrics scraped by Prometheus
+  and Grafana Agent.
+summary: Monolithic Mimir for Kubernetes Clusters
+maintainers:
+  - Balbir Thomas <balbir.thomas@canonical.com>
+
+provides:
+  grafana-source:
+    interface: grafana_datasource
+  receive-remote-write:
+    interface: prometheus_remote_write
+
+requires:
+  alertmanager:
+    interface: alertmanager_dispatch
+  ingress:
+    interface: ingress_per_unit
+    limit: 1
+
+peers:
+  mimir-peers:
+    interface: mimir_peers
 
 containers:
   mimir:
     resource: mimir-image
+    mounts:
+      - storage: config
+        location: /etc/mimir
+      - storage: database
+        location: /tmp/mimir
+
+storage:
+  config:
+    type: filesystem
+  database:
+    type: filesystem
 
 resources:
   mimir-image:
