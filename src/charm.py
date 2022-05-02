@@ -13,7 +13,10 @@ from ops.framework import StoredState
 from ops.main import main
 from ops.model import ActiveStatus, WaitingStatus
 
+from charms.prometheus_k8s.v0.prometheus_remote_write import PrometheusRemoteWriteProvider
+
 MIMIR_PORT = 9009
+MIMIR_PUSH_PATH = "/api/v1/push"
 MIMIR_CONFIG_FILE = "/etc/mimir/config.yaml"
 MIMIR_DIRS = {
     "bucket_store": "/tmp/mimir/tsdb-sync",
@@ -31,6 +34,11 @@ class MimirCharm(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
         self._name = "mimir"
+
+        self.remote_write_provider = PrometheusRemoteWriteProvider(
+            self, endpoint_port=MIMIR_PORT, endpoint_path=MIMIR_PUSH_PATH
+        )
+
         self.framework.observe(self.on.mimir_pebble_ready, self._on_mimir_pebble_ready)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
 
