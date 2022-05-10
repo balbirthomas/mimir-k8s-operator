@@ -18,8 +18,6 @@ provides:
     interface: prometheus_remote_write
 
 requires:
-  alertmanager:
-    interface: alertmanager_dispatch
   ingress:
     interface: ingress_per_unit
     limit: 1
