@@ -25,7 +25,8 @@ MIMIR_DIRS = {
     "data": "/tmp/mimir/data/tsdb",
     "tsdb": "/tmp/mimir/tsdb",
     "compactor": "/tmp/mimir/compactor",
-    "rules": "/tmp/mimir/rules"
+    "rules": "/tmp/mimir/rules",
+    "data-alertmanager": "/tmp/mimir/data-alertmanager"
 }
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ class MimirCharm(CharmBase):
                 self._name: {
                     "override": "replace",
                     "summary": self._name,
-                    "command": f"mimir -target=all --config.file {MIMIR_CONFIG_FILE}",
+                    "command": f"mimir -target=all,alertmanager --config.file {MIMIR_CONFIG_FILE}",
                     "startup": "enabled",
                 }
             },
@@ -156,6 +157,12 @@ class MimirCharm(CharmBase):
             "store_gateway": {
                 "sharding_ring": {
                     "replication_factor": 1
+                }
+            },
+            "alertmanager_storage": {
+                "backend": "filesystem",
+                "filesystem": {
+                    "dir": MIMIR_DIRS["data-alertmanager"]
                 }
             }
         }
