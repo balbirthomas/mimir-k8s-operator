@@ -6,6 +6,7 @@
 """
 
 import logging
+import socket
 import yaml
 
 from ops.charm import CharmBase
@@ -40,7 +41,7 @@ class MimirCharm(CharmBase):
             self, endpoint_port=MIMIR_PORT, endpoint_path=MIMIR_PUSH_PATH
         )
         self.grafana_source_provider = GrafanaSourceProvider(
-            self, source_type="prometheus", source_port="9009"
+            self, source_type="prometheus", source_url=self._grafana_source_url()
         )
 
         self.framework.observe(self.on.mimir_pebble_ready, self._on_mimir_pebble_ready)
@@ -160,6 +161,9 @@ class MimirCharm(CharmBase):
         }
 
         return yaml.dump(config)
+
+    def _grafana_source_url(self):
+        return f"http://{socket.getfqdn()}:{MIMIR_PORT}/prometheus"
 
 
 if __name__ == "__main__":
