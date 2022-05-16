@@ -10,16 +10,14 @@ Create and activate a virtualenv with the development requirements:
 
 ## Code overview
 
-TEMPLATE-TODO:
-One of the most important things a consumer of your charm (or library)
-needs to know is what set of functionality it provides. Which categories
-does it fit into? Which events do you listen to? Which libraries do you
-consume? Which ones do you export and how are they used?
+This charm supports three relations
+- Grafana Agent
+- Grafana
+- Ingress
 
 ## Intended use case
 
-TEMPLATE-TODO:
-Why were these decisions made? What's the scope of your charm?
+This charm manages Grafana Mimir in monolithic mode.
 
 ## Roadmap
 
@@ -28,6 +26,34 @@ hoping for or planning on, please add a Roadmap or TODO here
 
 ## Testing
 
+### Manual Testing
+
+- Build and deploy this charm
+```
+juju deploy ./mimir-k8s_ubuntu-20.04-amd64.charm --resource mimir-image=grafana/mimir:latest
+```
+- Deploy Grafana agent and Grafana
+```
+juju deploy grafana-k8s --channel=edge
+juju deploy grafana-agent-k8s --channel=edge
+```
+- Check Mimir is not acquiring any metrics as yet
+```
+curl -s http://<MIMI-UNIT-IP-ADDRESS>:9009/api/v1/user_stats
+```
+- Add a relation between Grafana Agent and Mimir
+- Wait a minute or so and now check that Mimir is geting metrics from Grafana agent
+- Add a relation between Mimir and Grafana
+```
+juju add-relation mimir-k8s grafana-k8s
+```
+- Login to Grafana dashboard and check there is a Mimir data source
+```
+juju run-action grafana-k8s/0 get-admin-password --wait
+```
+- Check Grafana is getting metrics from Mimir
+
+### Unit Tests
 The Python operator framework includes a very nice harness for testing
 operator behaviour without full deployment. Just `run_tests`:
 
