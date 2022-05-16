@@ -52,6 +52,16 @@ juju add-relation mimir-k8s grafana-k8s
 juju run-action grafana-k8s/0 get-admin-password --wait
 ```
 - Check Grafana is getting metrics from Mimir
+- Set an alertmanger configuration
+```
+curl -X POST --data-binary '@/path/to/alertmanager/config.yaml' -H Content-Type: text/x-yaml http://<MIMIR-UNIT-IP-ADDRESS>:9009/api/v1/alerts
+```
+- Check alertmanager configuration has been set by pointing your browser to
+`http://<MIMIR-UNIT-IP-ADDRESS:9009/alertmanager/`. Note the trailing slash. Alternatively the
+alertmanager configuration may also be queried using a `curl` commandline
+```
+curl -s http://<MIMIR-UNIT-IP-ADDRESS>:9009/api/v1/alerts
+```
 
 ### Unit Tests
 The Python operator framework includes a very nice harness for testing
