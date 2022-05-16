@@ -145,9 +145,9 @@ class MimirCharm(CharmBase):
                 }
             },
             "ruler_storage": {
-                "backend": "local",
-                "local": {
-                    "directory": MIMIR_DIRS["rules"]
+                "backend": "filesystem",
+                "filesystem": {
+                    "dir": MIMIR_DIRS["rules"]
                 }
             },
             "server": {
