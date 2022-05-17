@@ -144,6 +144,9 @@ class MimirCharm(CharmBase):
                     "replication_factor": 1
                 }
             },
+            "ruler": {
+                "alertmanager_url": f"http://localhost:{MIMIR_PORT}/alertmanager"
+            },
             "ruler_storage": {
                 "backend": "filesystem",
                 "filesystem": {
