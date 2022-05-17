@@ -26,7 +26,8 @@ MIMIR_DIRS = {
     "tsdb": "/tmp/mimir/tsdb",
     "compactor": "/tmp/mimir/compactor",
     "rules": "/tmp/mimir/rules",
-    "data-alertmanager": "/tmp/mimir/data-alertmanager"
+    "data-alertmanager": "/tmp/mimir/data-alertmanager",
+    "tenant-rules": "/tmp/mimir/rules/anonymous",
 }
 logger = logging.getLogger(__name__)
 
