@@ -64,9 +64,7 @@ class MimirCharm(CharmBase):
         """Define and start a workload using the Pebble API.
         """
         self._create_mimir_dirs()
-        # Set the mimir configuration
         self._set_mimir_config()
-        self._set_alertmanager_config()
 
         # Get a reference the container attribute on the PebbleReadyEvent
         container = event.workload
@@ -87,6 +85,8 @@ class MimirCharm(CharmBase):
         container.add_layer(self._name, pebble_layer, combine=True)
         # Autostart any services that were defined with startup: enabled
         container.autostart()
+
+        self._set_alertmanager_config()
         self.unit.status = ActiveStatus()
 
     def _on_config_changed(self, _):
