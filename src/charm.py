@@ -58,6 +58,7 @@ class MimirCharm(CharmBase):
 
         self.framework.observe(self.on.mimir_pebble_ready, self._on_mimir_pebble_ready)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(self.on.receive_remote_write_relation_changed, self._on_remote_write_relation_changed)
 
     def _on_mimir_pebble_ready(self, event):
         """Define and start a workload using the Pebble API.
@@ -93,6 +94,17 @@ class MimirCharm(CharmBase):
         """
         self._set_mimir_config()
         self._set_alertmanager_config()
+
+    def _on_remote_write_relation_changed(self, _):
+        container = self.unit.get_container(self._name)
+
+        if not container.can_connect():
+            self.unit.status = WaitingStatus("Waiting for Pebble ready")
+            return
+
+        alerts_for_all_relations = self.remote_write_provider.alerts()
+        for _, alerts in alerts_for_all_relations.items():
+            self._set_alert_rules(alerts["groups"])
 
     def _set_mimir_config(self):
         container = self.unit.get_container(self._name)
@@ -150,6 +162,12 @@ class MimirCharm(CharmBase):
             "alertmanager_config": self.config["alertmanager_config"] or yaml.dump(DEFAULT_ALERTMANAGER_CONFIG)
         }
         self._alertmanager.set_config(aconfig)
+
+    def _set_alert_rules(self, groups):
+        for group in groups:
+            alert_uploaded = self._alertmanager.set_alert_rule_group(group)
+            if not alert_uploaded:
+                logger.error("Failed to set alert group %s", group)
 
 
 if __name__ == "__main__":
