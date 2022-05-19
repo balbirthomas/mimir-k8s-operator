@@ -9,6 +9,25 @@ from .config import MIMIR_PORT
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_ALERT_TEMPLATE = r"""|
+    {{ define "__alertmanager" }}AlertManager{{ end }}
+    {{ define "__alertmanagerURL" }}{{ .ExternalURL }}/#/alerts?receiver={{ .Receiver | urlquery }}{{ end }}
+"""
+
+DEFAULT_ALERTMANAGER_CONFIG = {
+    "global": {"http_config": {"tls_config": {"insecure_skip_verify": True}}},
+    "templates": ["default_template"],
+    "route": {
+        "group_wait": "30s",
+        "group_interval": "5m",
+        "repeat_interval": "1h",
+        "receiver": "dummy",
+    },
+    "receivers": [
+        {"name": "dummy", "webhook_configs": [{"url": "http://127.0.0.1:5001/"}]}
+    ],
+}
+
 
 class AlertManager:
     def __init__(self, host="localhost", tenant="anonymous", timeout=10):

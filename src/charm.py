@@ -32,6 +32,11 @@ from mimir.config import (
     store_gateway_config,
     alertmanager_storage_config
 )
+from mimir.alertmanager import (
+    AlertManager,
+    DEFAULT_ALERT_TEMPLATE,
+    DEFAULT_ALERTMANAGER_CONFIG
+)
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +47,7 @@ class MimirCharm(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
         self._name = "mimir"
+        self._alertmanager = AlertManager()
 
         self.remote_write_provider = PrometheusRemoteWriteProvider(
             self, endpoint_port=MIMIR_PORT, endpoint_path=MIMIR_PUSH_PATH
@@ -59,6 +65,7 @@ class MimirCharm(CharmBase):
         self._create_mimir_dirs()
         # Set the mimir configuration
         self._set_mimir_config()
+        self._set_alertmanager_config()
 
         # Get a reference the container attribute on the PebbleReadyEvent
         container = event.workload
@@ -85,6 +92,7 @@ class MimirCharm(CharmBase):
         """Handle Mimir configuration chagne.
         """
         self._set_mimir_config()
+        self._set_alertmanager_config()
 
     def _set_mimir_config(self):
         container = self.unit.get_container(self._name)
@@ -127,6 +135,21 @@ class MimirCharm(CharmBase):
 
     def _grafana_source_url(self):
         return f"http://{socket.getfqdn()}:{MIMIR_PORT}/prometheus"
+
+    def _set_alertmanager_config(self):
+        container = self.unit.get_container(self._name)
+
+        if not container.can_connect():
+            self.unit.status = WaitingStatus("Waiting for Pebble ready")
+            return
+
+        aconfig = {
+            "template_files": {
+                "default_template": self.config["alertmanager_template"] or DEFAULT_ALERT_TEMPLATE,
+            },
+            "alertmanager_config": self.config["alertmanager_config"] or yaml.dump(DEFAULT_ALERTMANAGER_CONFIG)
+        }
+        self._alertmanager.set_config(aconfig)
 
 
 if __name__ == "__main__":
