@@ -21,8 +21,16 @@ This charm manages Grafana Mimir in monolithic mode.
 
 ## Roadmap
 
-If this Charm doesn't fulfill all of the initial functionality you were
-hoping for or planning on, please add a Roadmap or TODO here
+- Implement charm scale up/down and clustering of Mimir Components
+- Handle charm upgrade event
+- Handle remote write consumer relation departed event
+- Refine charm life cycle with respect to
+  + Restart Grafana Mimir workload when necessary (eg. after config changed)
+  + Remove alert rules on remote write consumer relation departed events
+- Support an Ingress relation
+- Implement unit tests
+- Implement integration tests
+- Provide CI/CD github workflows using Tox
 
 ## Testing
 
@@ -61,21 +69,23 @@ $ curl -X POST --data-binary '@/path/to/alertmanager/config.yaml' -H 'Content-Ty
 Note the trailing slash. Alternatively the alertmanager configuration may also be
 queried using a `curl` commandline
 ```sh
-curl -s http://<MIMIR-UNIT-IP-ADDRESS>:9009/api/v1/alerts
+$ curl -s http://<MIMIR-UNIT-IP-ADDRESS>:9009/api/v1/alerts
 ```
 - Set an alert rule. (Note default tenant ID with multi-tenancy disabled is `anonymous`)
 ```sh
-$ mimirtool rules load /path/to/alert/rule/cpu_overuse.yaml --address=http://<MIMIR-UNIT-IP-ADDRESS>:9009 --id=anonymous
+$ curl --data-binary '@/path/to/alert/rule/cpu_overuse.yaml' -H 'Content-Type: application/yaml' http://<MIMIR-UNIT-IP-ADDRESS>:9009/prometheus/config/v1/rules/anonymous
 ```
-or alternatively (this should work but does not, see this [disscussion thread](https://github.com/grafana/mimir/discussions/1863))
-```sh
-$ curl -d '@/path/to/alert/rule/cpu_overuse.yaml' -H 'Content-Type: application/yaml' http://<MIMIR-UNIT-IP-ADDRESS>:9009/prometheus/config/v1/rules/anonymous
-```
+For structure of alert rule file see this [disscussion thread](https://github.com/grafana/mimir/discussions/1863))
 - Check alert rule has been set using the command line
 ```sh
 $ curl http://<MIMIR-UNIT-IP-ADDRESS>:9009/prometheus/config/v1/rules
 ```
-- Wait for alert rule to fire and check it is firing in the Mimir Alertmanager UI
+- Wait for alert rule to fire and check it is firing in the Mimir Alertmanager UI which can be accessed at
+`http://<MIMIR-UNIT-IP-ADDRESS>:9009/alertmanager` or alternatively use the following curl commandline to
+query alerts
+```sh
+$ curl -s http://<MIMIR-UNIT-IP-ADDRESS>:9009/prometheus/api/v1/alerts | jq
+```
 - Delete the alert rule using
 ```sh
 $ curl -X DELETE http://<MIMIR-UNIT-IP-ADDRESS>:9009/prometheus/config/v1/rules/anonymous/<RULE-GROUP-NAME>
