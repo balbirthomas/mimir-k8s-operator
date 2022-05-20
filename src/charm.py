@@ -30,7 +30,8 @@ from mimir.config import (
     ruler_storage_config,
     server_config,
     store_gateway_config,
-    alertmanager_storage_config
+    alertmanager_storage_config,
+    memberlist_config
 )
 from mimir.alertmanager import (
     AlertManager,
@@ -47,18 +48,23 @@ class MimirCharm(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
         self._name = "mimir"
+        self._peername = "mimir-peers"
         self._alertmanager = AlertManager()
 
         self.remote_write_provider = PrometheusRemoteWriteProvider(
             self, endpoint_port=MIMIR_PORT, endpoint_path=MIMIR_PUSH_PATH
         )
         self.grafana_source_provider = GrafanaSourceProvider(
-            self, source_type="prometheus", source_url=self._grafana_source_url()
+            self, source_type="prometheus", source_url=self._grafana_source_url
         )
 
         self.framework.observe(self.on.mimir_pebble_ready, self._on_mimir_pebble_ready)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.receive_remote_write_relation_changed, self._on_remote_write_relation_changed)
+
+        self.framework.observe(self.on[self._peername].relation_joined, self._on_peer_relation_joined)
+        self.framework.observe(self.on[self._peername].relation_changed, self._on_peer_relation_changed)
+        self.framework.observe(self.on[self._peername].relation_departed, self._on_peer_relation_departed)
 
     def _on_mimir_pebble_ready(self, event):
         """Define and start a workload using the Pebble API.
@@ -83,8 +89,7 @@ class MimirCharm(CharmBase):
         }
         # Add initial Pebble config layer using the Pebble API
         container.add_layer(self._name, pebble_layer, combine=True)
-        # Autostart any services that were defined with startup: enabled
-        container.autostart()
+        container.start(self._name)
 
         self._set_alertmanager_config()
         self.unit.status = ActiveStatus()
@@ -94,6 +99,7 @@ class MimirCharm(CharmBase):
         """
         self._set_mimir_config()
         self._set_alertmanager_config()
+        self._restart_mimir()
 
     def _on_remote_write_relation_changed(self, _):
         container = self.unit.get_container(self._name)
@@ -105,6 +111,29 @@ class MimirCharm(CharmBase):
         alerts_for_all_relations = self.remote_write_provider.alerts()
         for _, alerts in alerts_for_all_relations.items():
             self._set_alert_rules(alerts["groups"])
+
+    def _on_peer_relation_joined(self, event):
+        event.relation.data[self.unit]["peer_hostname"] = str(self.hostname)
+
+    def _on_peer_relation_changed(self, _):
+        logger.debug("New memberlist : %s", memberlist_config(self.unit.name, self.peers))
+        self._set_mimir_config()
+        self._restart_mimir()
+
+    def _on_peer_relation_departed(self, _):
+        logger.debug("New memberlist : %s", memberlist_config(self.unit.name, self.peers))
+        self._set_mimir_config()
+        self._restart_mimir()
+
+    def _restart_mimir(self):
+        container = self.unit.get_container(self._name)
+
+        if not container.can_connect():
+            self.unit.status = WaitingStatus("Waiting for Pebble ready")
+            return
+
+        container.stop(self._name)
+        container.start(self._name)
 
     def _set_mimir_config(self):
         container = self.unit.get_container(self._name)
@@ -140,13 +169,11 @@ class MimirCharm(CharmBase):
             "ruler_storage": ruler_storage_config(),
             "server": server_config(),
             "store_gateway": store_gateway_config(),
-            "alertmanager_storage": alertmanager_storage_config()
+            "alertmanager_storage": alertmanager_storage_config(),
+            "memberlist": memberlist_config(self.unit.name, self.peers)
         }
 
         return yaml.dump(config)
-
-    def _grafana_source_url(self):
-        return f"http://{socket.getfqdn()}:{MIMIR_PORT}/prometheus"
 
     def _set_alertmanager_config(self):
         container = self.unit.get_container(self._name)
@@ -168,6 +195,51 @@ class MimirCharm(CharmBase):
             alert_uploaded = self._alertmanager.set_alert_rule_group(group)
             if not alert_uploaded:
                 logger.error("Failed to set alert group %s", group)
+
+    @property
+    def hostname(self):
+        """Fully qualified hostname of this unit.
+
+        Returns:
+            A string given fully qualified hostname of this unit.
+        """
+        return socket.getfqdn()
+
+    @property
+    def _grafana_source_url(self):
+        """URL used as Grafana data source.
+
+        Returns:
+            A string providing to URL to be used as a the
+            Grafana data source for this unit.
+        """
+        return f"http://{self.hostname}:{MIMIR_PORT}/prometheus"
+
+    @property
+    def peer_relation(self):
+        """Fetch the peer relation.
+
+        Returns:
+             A :class:`ops.model.Relation` object representing
+             the peer relation.
+        """
+        return self.model.get_relation(self._peername)
+
+    @property
+    def peers(self):
+        """Fetch all peer names and hostnames.
+
+        Returns:
+            A mapping from peer unit names to peer hostnames.
+        """
+        peers = {}
+        for unit in self.peer_relation.units:
+            if (hostname := self.peer_relation.data[unit].get("peer_hostname")):
+                peers[unit.name] = hostname
+
+        peers[self.unit.name] = str(self.hostname)
+
+        return peers
 
 
 if __name__ == "__main__":

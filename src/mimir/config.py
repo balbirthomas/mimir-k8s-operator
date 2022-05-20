@@ -108,3 +108,11 @@ def alertmanager_storage_config():
     }
 
     return cfg
+
+def memberlist_config(nodename, peers):
+    cfg = {
+        "node_name": nodename,
+        "join_members": list(peers.values())
+    }
+
+    return cfg
