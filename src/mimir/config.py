@@ -52,14 +52,14 @@ def distributor_config():
 
     return cfg
 
-def ingester_config():
+def ingester_config(npeers):
     cfg = {
         "ring": {
             "instance_addr": "127.0.0.1",
             "kvstore": {
                 "store": "memberlist",
             },
-            "replication_factor": 1
+            "replication_factor": npeers
         }
     }
 
@@ -90,10 +90,10 @@ def server_config():
 
     return cfg
 
-def store_gateway_config():
+def store_gateway_config(npeers):
     cfg = {
         "sharding_ring": {
-            "replication_factor": 1
+            "replication_factor": npeers
         }
     }
 

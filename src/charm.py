@@ -164,11 +164,11 @@ class MimirCharm(CharmBase):
             "blocks_storage": block_storage_config(),
             "compactor": compactor_config(),
             "distributor": distributor_config(),
-            "ingester": ingester_config(),
+            "ingester": ingester_config(len(self.peers)),
             "ruler": ruler_config(),
             "ruler_storage": ruler_storage_config(),
             "server": server_config(),
-            "store_gateway": store_gateway_config(),
+            "store_gateway": store_gateway_config(len(self.peers)),
             "alertmanager_storage": alertmanager_storage_config(),
             "memberlist": memberlist_config(self.unit.name, self.peers)
         }
