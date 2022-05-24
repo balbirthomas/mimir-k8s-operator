@@ -12,20 +12,25 @@ MIMIR_DIRS = {
     "tenant-rules": "/tmp/mimir/rules/anonymous",
 }
 
-def block_storage_config():
+def block_storage_config(s3_config):
     cfg = {
-        "backend": "filesystem",
         "bucket_store": {
             "sync_dir": MIMIR_DIRS["bucket_store"]
-        },
-        "filesystem": {
-            "dir": MIMIR_DIRS["data"]
         },
         "tsdb": {
             "dir": MIMIR_DIRS["tsdb"]
         }
     }
-    
+
+    if s3_config:
+        cfg["backend"] = "s3"
+        cfg["s3"] = s3_config
+    else:
+        cfg["backend"] = "filesystem"
+        cfg["filesystem"] = {
+            "dir": MIMIR_DIRS["data"]
+        }
+
     return cfg
 
 def compactor_config():

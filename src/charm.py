@@ -159,9 +159,11 @@ class MimirCharm(CharmBase):
                 container.make_dir(path, make_parents=True)
 
     def _mimir_config(self) -> str:
+        s3_config = yaml.safe_load(self.config.get("s3", "{}"))
+
         config = {
             "multitenancy_enabled": False,
-            "blocks_storage": block_storage_config(),
+            "blocks_storage": block_storage_config(s3_config),
             "compactor": compactor_config(),
             "distributor": distributor_config(),
             "ingester": ingester_config(len(self.peers)),

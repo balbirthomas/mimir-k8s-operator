@@ -25,3 +25,10 @@ options:
       https://prometheus.io/docs/alerting/latest/notification_examples/ for more details
       on templates.
     default: ""
+  s3:
+    type: string
+    description: |
+      Credentials for an S3 object storage system. The credentials must in the form of a string that
+      can be deserialized as a YAML object. The top level YAML object is a mapping. The keys in this
+      mapping must provide the requisite S3 credentials.
+    default: ""
