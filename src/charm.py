@@ -12,7 +12,7 @@ import yaml
 from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
-from ops.model import ActiveStatus, WaitingStatus
+from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 
 from charms.grafana_k8s.v0.grafana_source import GrafanaSourceProvider
 from charms.prometheus_k8s.v0.prometheus_remote_write import PrometheusRemoteWriteProvider
@@ -101,6 +101,9 @@ class MimirCharm(CharmBase):
         self._set_alertmanager_config()
         self._restart_mimir()
 
+        if self.app.planned_units() == 1 or self.config.get("s3", ""):
+            self.unit.status = ActiveStatus()
+
     def _on_remote_write_relation_changed(self, _):
         container = self.unit.get_container(self._name)
 
@@ -113,6 +116,10 @@ class MimirCharm(CharmBase):
             self._set_alert_rules(alerts["groups"])
 
     def _on_peer_relation_joined(self, event):
+        if self.app.planned_units() > 1 and not self.config.get("s3", ""):
+            self.unit.status = BlockedStatus("Replication requires object storage")
+            logger.error("Mimir replication requires object storage, s3 configuration option must be set.")
+
         event.relation.data[self.unit]["peer_hostname"] = str(self.hostname)
 
     def _on_peer_relation_changed(self, _):
@@ -120,10 +127,16 @@ class MimirCharm(CharmBase):
         self._set_mimir_config()
         self._restart_mimir()
 
+        if self.app.planned_units() == 1 or self.config.get("s3", ""):
+            self.unit.status = ActiveStatus()
+
     def _on_peer_relation_departed(self, _):
         logger.debug("New memberlist : %s", memberlist_config(self.unit.name, self.peers))
         self._set_mimir_config()
         self._restart_mimir()
+
+        if self.app.planned_units() == 1 or self.config.get("s3", ""):
+            self.unit.status = ActiveStatus()
 
     def _restart_mimir(self):
         container = self.unit.get_container(self._name)
