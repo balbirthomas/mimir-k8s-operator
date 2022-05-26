@@ -99,10 +99,13 @@ class MimirCharm(CharmBase):
         """
         self._set_mimir_config()
         self._set_alertmanager_config()
-        self._restart_mimir()
+        mimir_restarted = self._restart_mimir()
 
-        if self.app.planned_units() == 1 or self.config.get("s3", ""):
+        if mimir_restarted:
             self.unit.status = ActiveStatus()
+
+        if self.app.planned_units() > 1 and not self.config.get("s3", ""):
+            self.unit.status = BlockedStatus("Replication requires object storage")
 
     def _on_remote_write_relation_changed(self, _):
         container = self.unit.get_container(self._name)
@@ -143,33 +146,39 @@ class MimirCharm(CharmBase):
 
         if not container.can_connect():
             self.unit.status = WaitingStatus("Waiting for Pebble ready")
-            return
+            return False
 
         container.stop(self._name)
         container.start(self._name)
+
+        return True
 
     def _set_mimir_config(self):
         container = self.unit.get_container(self._name)
 
         if not container.can_connect():
             self.unit.status = WaitingStatus("Waiting for Pebble ready")
-            return
+            return False
 
         # push mimr config file to workload
         mimir_config = self._mimir_config()
         container.push(MIMIR_CONFIG_FILE, mimir_config, make_dirs=True)
         logger.info("Set new Mimir configuration")
 
+        return True
+
     def _create_mimir_dirs(self):
         container = self.unit.get_container(self._name)
 
         if not container.can_connect():
             self.unit.status = WaitingStatus("Waiting for Pebble ready")
-            return
+            return False
 
         for _, path in MIMIR_DIRS.items():
             if not container.exists(path):
                 container.make_dir(path, make_parents=True)
+
+        return True
 
     def _mimir_config(self) -> str:
         s3_config = yaml.safe_load(self.config.get("s3", "{}"))
@@ -195,7 +204,7 @@ class MimirCharm(CharmBase):
 
         if not container.can_connect():
             self.unit.status = WaitingStatus("Waiting for Pebble ready")
-            return
+            return False
 
         aconfig = {
             "template_files": {
@@ -205,11 +214,17 @@ class MimirCharm(CharmBase):
         }
         self._alertmanager.set_config(aconfig)
 
+        return True
+
     def _set_alert_rules(self, groups):
+        failed_groups = []
         for group in groups:
             alert_uploaded = self._alertmanager.set_alert_rule_group(group)
             if not alert_uploaded:
                 logger.error("Failed to set alert group %s", group)
+                failed_groups.append(group)
+
+        return failed_groups
 
     @property
     def hostname(self):
