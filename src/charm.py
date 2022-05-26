@@ -248,11 +248,15 @@ class MimirCharm(CharmBase):
             A mapping from peer unit names to peer hostnames.
         """
         peers = {}
+        peers[self.unit.name] = str(self.hostname)
+
+        if not self.peer_relation:
+            # just return self unit if no peers
+            return peers
+
         for unit in self.peer_relation.units:
             if (hostname := self.peer_relation.data[unit].get("peer_hostname")):
                 peers[unit.name] = hostname
-
-        peers[self.unit.name] = str(self.hostname)
 
         return peers
 
