@@ -10,7 +10,6 @@ from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingSta
 from ops.testing import Harness
 
 from charm import MimirCharm
-from mimir.alertmanager import AlertManager
 from mimir.config import MIMIR_CONFIG_FILE
 
 S3_CONFIG = {

@@ -1,7 +1,6 @@
 # Copyright 2020 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import os
 from typing import Callable
 from unittest.mock import patch
 

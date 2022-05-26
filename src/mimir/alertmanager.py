@@ -79,7 +79,7 @@ class AlertManager:
                 error.reason,
             )
         except URLError as error:
-            logger.debug("Invalid URL %s", url)
+            logger.debug("Invalid URL %s : %s", url, error)
         except TimeoutError:
             logger.debug("Request timeout fetching URL %s", url)
 
@@ -101,7 +101,7 @@ class AlertManager:
                 error.reason,
             )
         except URLError as error:
-            logger.debug("Invalid URL %s", url)
+            logger.debug("Invalid URL %s : %s", url, error)
         except TimeoutError:
             logger.debug("Request timeout during posting to URL %s", url)
 
@@ -123,7 +123,7 @@ class AlertManager:
                 error.reason,
             )
         except URLError as error:
-            logger.debug("Invalid URL %s", url)
+            logger.debug("Invalid URL %s : %s", url, error)
         except TimeoutError:
             logger.debug("Request timeout deleting %s", url)
 
