@@ -19,7 +19,7 @@ S3_CONFIG =  {
     "secret_access_key": "mimir_s3_access_key",
     "access_key_id": "mimir_s3_access_id"
 }
-CPU_OVER_USE_RULE_FILE = "tests/alert_rules/cpu_overuse.json"
+CPU_OVER_USE_RULE_FILE = "tests/unit/alert_rules/cpu_overuse.json"
 
 
 class TestCharm(unittest.TestCase):
