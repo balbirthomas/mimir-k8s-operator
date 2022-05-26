@@ -70,13 +70,13 @@ class AlertManager:
                 enc = charset if charset else encoding
                 body = body.decode(encoding=enc)
         except HTTPError as error:
-            logger.error(
+            logger.debug(
                 "Failed to fetch %s, status: %s, reason: %s", url, error.status, error.reason
             )
         except URLError as error:
-            logger.error("Invalid URL %s", url)
+            logger.debug("Invalid URL %s", url)
         except TimeoutError:
-            logger.error("Request timeout fetching URL %s", url)
+            logger.debug("Request timeout fetching URL %s", url)
 
         return body
 
@@ -89,13 +89,13 @@ class AlertManager:
             with urlopen(request, timeout=timeout) as response:
                 status = response.status
         except HTTPError as error:
-            logger.error(
+            logger.debug(
                 "Failed posting to %s, status: %s, reason: %s", url, error.status, error.reason
             )
         except URLError as error:
-            logger.error("Invalid URL %s", url)
+            logger.debug("Invalid URL %s", url)
         except TimeoutError:
-            logger.error("Request timeout during posting to URL %s", url)
+            logger.debug("Request timeout during posting to URL %s", url)
 
         return status
 
@@ -108,12 +108,12 @@ class AlertManager:
             with urlopen(request, timeout=timeout) as response:
                 status = response.status
         except HTTPError as error:
-            logger.error(
+            logger.debug(
                 "Delete failed %s, status: %s, reason: %s", url, error.status, error.reason
             )
         except URLError as error:
-            logger.error("Invalid URL %s", url)
+            logger.debug("Invalid URL %s", url)
         except TimeoutError:
-            logger.error("Request timeout deleting %s", url)
+            logger.debug("Request timeout deleting %s", url)
 
         return status

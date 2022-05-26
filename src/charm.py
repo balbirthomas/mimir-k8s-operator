@@ -121,7 +121,7 @@ class MimirCharm(CharmBase):
     def _on_peer_relation_joined(self, event):
         if self.app.planned_units() > 1 and not self.config.get("s3", ""):
             self.unit.status = BlockedStatus("Replication requires object storage")
-            logger.error("Mimir replication requires object storage, s3 configuration option must be set.")
+            logger.debug("Mimir replication requires object storage, s3 configuration option must be set.")
 
         event.relation.data[self.unit]["peer_hostname"] = str(self.hostname)
 
@@ -221,7 +221,7 @@ class MimirCharm(CharmBase):
         for group in groups:
             alert_uploaded = self._alertmanager.set_alert_rule_group(group)
             if not alert_uploaded:
-                logger.error("Failed to set alert group %s", group)
+                logger.debug("Failed to set alert group %s", group)
                 failed_groups.append(group)
 
         return failed_groups
