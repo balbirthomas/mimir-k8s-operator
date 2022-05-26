@@ -18,7 +18,9 @@ def patch_network_get(private_address="10.1.157.116") -> Callable:
                 {
                     "mac-address": "",
                     "interface-name": "",
-                    "addresses": [{"hostname": "", "value": private_address, "cidr": ""}],
+                    "addresses": [
+                        {"hostname": "", "value": private_address, "cidr": ""}
+                    ],
                 }
             ],
             "egress-subnets": ["10.152.183.65/32"],

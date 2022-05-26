@@ -225,8 +225,10 @@ class RelationRoleMismatchError(Exception):
         self._relation_name = relation_name
         self.expected_relation_interface = expected_relation_role
         self.actual_relation_role = actual_relation_role
-        self.message = "The '{}' relation has role '{}' rather than the expected '{}'".format(
-            relation_name, repr(actual_relation_role), repr(expected_relation_role)
+        self.message = (
+            "The '{}' relation has role '{}' rather than the expected '{}'".format(
+                relation_name, repr(actual_relation_role), repr(expected_relation_role)
+            )
         )
 
         super().__init__(self.message)
@@ -275,7 +277,9 @@ def _validate_relation_by_interface_and_direction(
                 relation_name, RelationRole.requires, RelationRole.provides
             )
     else:
-        raise Exception("Unexpected RelationDirection: {}".format(expected_relation_role))
+        raise Exception(
+            "Unexpected RelationDirection: {}".format(expected_relation_role)
+        )
 
 
 class SourceFieldsMissingError(Exception):
@@ -376,7 +380,9 @@ class GrafanaSourceProvider(Object):
         if not refresh_event:
             if len(self._charm.meta.containers) == 1:
                 container = list(self._charm.meta.containers.values())[0]
-                refresh_event = self._charm.on[container.name.replace("-", "_")].pebble_ready
+                refresh_event = self._charm.on[
+                    container.name.replace("-", "_")
+                ].pebble_ready
 
         if source_port and source_url:
             logger.warning(
@@ -502,8 +508,12 @@ class GrafanaSourceConsumer(Object):
             sources_to_delete=set(),
         )
 
-        self.framework.observe(events.relation_changed, self._on_grafana_source_relation_changed)
-        self.framework.observe(events.relation_departed, self._on_grafana_source_relation_departed)
+        self.framework.observe(
+            events.relation_changed, self._on_grafana_source_relation_changed
+        )
+        self.framework.observe(
+            events.relation_departed, self._on_grafana_source_relation_departed
+        )
         self.framework.observe(
             self._charm.on[DEFAULT_PEER_NAME].relation_changed,
             self._on_grafana_peer_changed,
@@ -559,7 +569,9 @@ class GrafanaSourceConsumer(Object):
             )
 
             host = (
-                "http://{}".format(host_addr) if not re.match(r"^\w+://", host_addr) else host_addr
+                "http://{}".format(host_addr)
+                if not re.match(r"^\w+://", host_addr)
+                else host_addr
             )
 
             host_data = {
@@ -595,7 +607,9 @@ class GrafanaSourceConsumer(Object):
             hosts[unit.name] = host_address
         return hosts
 
-    def _on_grafana_source_relation_departed(self, event: RelationDepartedEvent) -> None:
+    def _on_grafana_source_relation_departed(
+        self, event: RelationDepartedEvent
+    ) -> None:
         """Update job config when providers depart.
 
         When a Grafana source provider departs, the configuration
@@ -626,7 +640,9 @@ class GrafanaSourceConsumer(Object):
         if removed_source:
             if event.unit:
                 # Remove one unit only
-                dead_unit = [s for s in removed_source if s["unit"] == event.unit.name][0]
+                dead_unit = [s for s in removed_source if s["unit"] == event.unit.name][
+                    0
+                ]
                 self._remove_source(dead_unit["source_name"])
 
                 # Re-update the list of stored sources

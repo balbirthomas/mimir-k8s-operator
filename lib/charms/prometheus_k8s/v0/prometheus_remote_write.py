@@ -68,10 +68,8 @@ class RelationInterfaceMismatchError(Exception):
         self.relation_name = relation_name
         self.expected_relation_interface = expected_relation_interface
         self.actual_relation_interface = actual_relation_interface
-        self.message = (
-            "The '{}' relation has '{}' as its interface rather than the expected '{}'".format(
-                relation_name, actual_relation_interface, expected_relation_interface
-            )
+        self.message = "The '{}' relation has '{}' as its interface rather than the expected '{}'".format(
+            relation_name, actual_relation_interface, expected_relation_interface
         )
 
         super().__init__(self.message)
@@ -89,8 +87,10 @@ class RelationRoleMismatchError(Exception):
         self.relation_name = relation_name
         self.expected_relation_interface = expected_relation_role
         self.actual_relation_role = actual_relation_role
-        self.message = "The '{}' relation has role '{}' rather than the expected '{}'".format(
-            relation_name, repr(actual_relation_role), repr(expected_relation_role)
+        self.message = (
+            "The '{}' relation has role '{}' rather than the expected '{}'".format(
+                relation_name, repr(actual_relation_role), repr(expected_relation_role)
+            )
         )
 
         super().__init__(self.message)
@@ -104,7 +104,9 @@ class JujuTopology:
     def __new__(cls, *args, **kwargs):
         """Reject instantiation of a base JujuTopology class. Children only."""
         if cls is JujuTopology:
-            raise TypeError("only children of '{}' may be instantiated".format(cls.__name__))
+            raise TypeError(
+                "only children of '{}' may be instantiated".format(cls.__name__)
+            )
         return object.__new__(cls)
 
     def __init__(
@@ -191,15 +193,18 @@ class JujuTopology:
     def identifier(self) -> str:
         """Format the topology information into a terse string."""
         # This is odd, but may have `None` as a model key
-        return "_".join([str(val) for val in self.as_promql_label_dict().values()]).replace(
-            "/", "_"
-        )
+        return "_".join(
+            [str(val) for val in self.as_promql_label_dict().values()]
+        ).replace("/", "_")
 
     @property
     def promql_labels(self) -> str:
         """Format the topology information into a verbose string."""
         return ", ".join(
-            ['{}="{}"'.format(key, value) for key, value in self.as_promql_label_dict().items()]
+            [
+                '{}="{}"'.format(key, value)
+                for key, value in self.as_promql_label_dict().items()
+            ]
         )
 
     def as_dict(self, rename_keys: Optional[Dict[str, str]] = None) -> OrderedDict:
@@ -385,7 +390,9 @@ class AlertRules:
                 rule_file = yaml.safe_load(rf)
 
             except Exception as e:
-                logger.error("Failed to read alert rules from %s: %s", file_path.name, e)
+                logger.error(
+                    "Failed to read alert rules from %s: %s", file_path.name, e
+                )
                 return []
 
             if _is_official_alert_rule_format(rule_file):
@@ -451,7 +458,9 @@ class AlertRules:
 
     def _is_already_modified(self, name: str) -> bool:
         """Detect whether a group name has already been modified with juju topology."""
-        modified_matcher = re.compile(r"^.*?_[\da-f]{8}-([\da-f]{4}-){3}[\da-f]{12}_.*?alerts$")
+        modified_matcher = re.compile(
+            r"^.*?_[\da-f]{8}-([\da-f]{4}-){3}[\da-f]{12}_.*?alerts$"
+        )
         if modified_matcher.match(name) is not None:
             return True
         return False
@@ -471,7 +480,9 @@ class AlertRules:
             List of files in `dir_path` that have one of the suffixes specified in `suffixes`.
         """
         all_files_in_dir = dir_path.glob("**/*" if recursive else "*")
-        return list(filter(lambda f: f.is_file() and f.suffix in suffixes, all_files_in_dir))
+        return list(
+            filter(lambda f: f.is_file() and f.suffix in suffixes, all_files_in_dir)
+        )
 
     def _from_dir(self, dir_path: Path, recursive: bool) -> List[dict]:
         """Read all rule files in a directory.
@@ -491,7 +502,9 @@ class AlertRules:
         alert_groups = []  # type: List[dict]
 
         # Gather all alerts into a list of groups
-        for file_path in self._multi_suffix_glob(dir_path, [".rule", ".rules"], recursive):
+        for file_path in self._multi_suffix_glob(
+            dir_path, [".rule", ".rules"], recursive
+        ):
             alert_groups_from_file = self._from_file(dir_path, file_path)
             if alert_groups_from_file:
                 logger.debug("Reading alert rule from %s", file_path)
@@ -584,7 +597,9 @@ def _validate_relation_by_interface_and_direction(
                 relation_name, RelationRole.requires, RelationRole.provides
             )
     else:
-        raise Exception("Unexpected RelationDirection: {}".format(expected_relation_role))
+        raise Exception(
+            "Unexpected RelationDirection: {}".format(expected_relation_role)
+        )
 
 
 class PrometheusRemoteWriteEndpointsChangedEvent(EventBase):
@@ -638,7 +653,9 @@ def _resolve_dir_against_charm_path(charm: CharmBase, *path_elements: str) -> st
     alerts_dir_path = charm_dir.absolute().joinpath(*path_elements)
 
     if not alerts_dir_path.exists():
-        raise InvalidAlertRulePathError(str(alerts_dir_path), "directory does not exist")
+        raise InvalidAlertRulePathError(
+            str(alerts_dir_path), "directory does not exist"
+        )
     if not alerts_dir_path.is_dir():
         raise InvalidAlertRulePathError(str(alerts_dir_path), "is not a directory")
 
@@ -795,11 +812,21 @@ class PrometheusRemoteWriteConsumer(Object):
 
         on_relation = self._charm.on[self._relation_name]
 
-        self.framework.observe(on_relation.relation_joined, self._handle_endpoints_changed)
-        self.framework.observe(on_relation.relation_changed, self._handle_endpoints_changed)
-        self.framework.observe(on_relation.relation_departed, self._handle_endpoints_changed)
-        self.framework.observe(on_relation.relation_broken, self._handle_endpoints_changed)
-        self.framework.observe(on_relation.relation_joined, self._push_alerts_on_relation_joined)
+        self.framework.observe(
+            on_relation.relation_joined, self._handle_endpoints_changed
+        )
+        self.framework.observe(
+            on_relation.relation_changed, self._handle_endpoints_changed
+        )
+        self.framework.observe(
+            on_relation.relation_departed, self._handle_endpoints_changed
+        )
+        self.framework.observe(
+            on_relation.relation_broken, self._handle_endpoints_changed
+        )
+        self.framework.observe(
+            on_relation.relation_joined, self._push_alerts_on_relation_joined
+        )
         self.framework.observe(
             self._charm.on.leader_elected, self._push_alerts_to_all_relation_databags
         )
@@ -827,7 +854,9 @@ class PrometheusRemoteWriteConsumer(Object):
         alert_rules_as_dict = alert_rules.as_dict()
 
         if alert_rules_as_dict:
-            relation.data[self._charm.app]["alert_rules"] = json.dumps(alert_rules_as_dict)
+            relation.data[self._charm.app]["alert_rules"] = json.dumps(
+                alert_rules_as_dict
+            )
 
     def reload_alerts(self) -> None:
         """Reload alert rules from disk and push to relation data."""
@@ -974,7 +1003,9 @@ class PrometheusRemoteWriteProvider(Object):
                 If not provided, all instances of the `prometheus_remote_write`
                 relation are updated.
         """
-        relations = [relation] if relation else self.model.relations[self._relation_name]
+        relations = (
+            [relation] if relation else self.model.relations[self._relation_name]
+        )
 
         for relation in relations:
             self._set_endpoint_on_relation(relation)
@@ -1041,12 +1072,16 @@ class PrometheusRemoteWriteProvider(Object):
         Returns:
             a dictionary mapping the name of an alert rule group to the group.
         """
-        alerts = {}  # type: Dict[str, dict] # mapping b/w juju identifiers and alert rule files
+        alerts = (
+            {}
+        )  # type: Dict[str, dict] # mapping b/w juju identifiers and alert rule files
         for relation in self._charm.model.relations[self._relation_name]:
             if not relation.units:
                 continue
 
-            alert_rules = json.loads(relation.data[relation.app].get("alert_rules", "{}"))
+            alert_rules = json.loads(
+                relation.data[relation.app].get("alert_rules", "{}")
+            )
 
             if not alert_rules:
                 continue
@@ -1068,7 +1103,9 @@ class PrometheusRemoteWriteProvider(Object):
                     else:
                         alerts[identifier]["groups"].append(group)
                 except KeyError:
-                    logger.error("Alert rules were found but no usable labels were present")
+                    logger.error(
+                        "Alert rules were found but no usable labels were present"
+                    )
 
         return alerts
 
@@ -1123,12 +1160,16 @@ class PromqlTransformer:
             return expression
         if not self.path:
             logger.debug(
-                "`promql-transform` unavailable. leaving expression unchanged: %s", expression
+                "`promql-transform` unavailable. leaving expression unchanged: %s",
+                expression,
             )
             return expression
         args = [str(self.path)]
         args.extend(
-            ["--label-matcher={}={}".format(key, value) for key, value in topology.items()]
+            [
+                "--label-matcher={}={}".format(key, value)
+                for key, value in topology.items()
+            ]
         )
 
         args.extend(["{}".format(expression)])
@@ -1136,7 +1177,9 @@ class PromqlTransformer:
         try:
             return self._exec(args)
         except Exception as e:
-            logger.debug('Applying the expression failed: "%s", falling back to the original', e)
+            logger.debug(
+                'Applying the expression failed: "%s", falling back to the original', e
+            )
             return expression
 
     def _get_transformer_path(self) -> Optional[Path]:

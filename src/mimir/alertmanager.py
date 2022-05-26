@@ -1,9 +1,9 @@
-import yaml
 import logging
-
 from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin
-from urllib.request import urlopen, Request
+from urllib.request import Request, urlopen
+
+import yaml
 
 from .config import MIMIR_PORT
 
@@ -39,7 +39,7 @@ class AlertManager:
     def set_config(self, config):
         url = urljoin(self._base_url, "/api/v1/alerts")
         headers = {"Content-Type": "application/yaml"}
-        post_data = yaml.dump(config).encode('utf-8')
+        post_data = yaml.dump(config).encode("utf-8")
         response = self._post(url, post_data, headers=headers)
 
         return response
@@ -47,18 +47,20 @@ class AlertManager:
     def set_alert_rule_group(self, group):
         url = urljoin(self._base_url, f"/prometheus/config/v1/rules/{self._tenant}")
         headers = {"Content-Type": "application/yaml"}
-        post_data = yaml.dump(group).encode('utf-8')
+        post_data = yaml.dump(group).encode("utf-8")
         response = self._post(url, post_data, headers=headers)
 
         return response
 
     def delete_alert_rule_group(self, groupname):
-        url = urljoin(self._base_url, f"/prometheus/config/v1/rules/{self._tenant}/{groupname}")
+        url = urljoin(
+            self._base_url, f"/prometheus/config/v1/rules/{self._tenant}/{groupname}"
+        )
         response = self._delete(url)
 
         return response
 
-    def _get(self, url, headers=None, timeout=None, encoding='utf-8') -> str:
+    def _get(self, url, headers=None, timeout=None, encoding="utf-8") -> str:
         body = ""
         request = Request(url, headers=headers or {}, method="GET")
         timeout = timeout if timeout else self._timeout
@@ -71,7 +73,10 @@ class AlertManager:
                 body = body.decode(encoding=enc)
         except HTTPError as error:
             logger.debug(
-                "Failed to fetch %s, status: %s, reason: %s", url, error.status, error.reason
+                "Failed to fetch %s, status: %s, reason: %s",
+                url,
+                error.status,
+                error.reason,
             )
         except URLError as error:
             logger.debug("Invalid URL %s", url)
@@ -90,7 +95,10 @@ class AlertManager:
                 status = response.status
         except HTTPError as error:
             logger.debug(
-                "Failed posting to %s, status: %s, reason: %s", url, error.status, error.reason
+                "Failed posting to %s, status: %s, reason: %s",
+                url,
+                error.status,
+                error.reason,
             )
         except URLError as error:
             logger.debug("Invalid URL %s", url)
@@ -109,7 +117,10 @@ class AlertManager:
                 status = response.status
         except HTTPError as error:
             logger.debug(
-                "Delete failed %s, status: %s, reason: %s", url, error.status, error.reason
+                "Delete failed %s, status: %s, reason: %s",
+                url,
+                error.status,
+                error.reason,
             )
         except URLError as error:
             logger.debug("Invalid URL %s", url)

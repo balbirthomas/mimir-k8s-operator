@@ -7,36 +7,37 @@
 
 import logging
 import socket
-import yaml
 
+import yaml
+from charms.grafana_k8s.v0.grafana_source import GrafanaSourceProvider
+from charms.prometheus_k8s.v0.prometheus_remote_write import (
+    PrometheusRemoteWriteProvider,
+)
 from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 
-from charms.grafana_k8s.v0.grafana_source import GrafanaSourceProvider
-from charms.prometheus_k8s.v0.prometheus_remote_write import PrometheusRemoteWriteProvider
-
+from mimir.alertmanager import (
+    DEFAULT_ALERT_TEMPLATE,
+    DEFAULT_ALERTMANAGER_CONFIG,
+    AlertManager,
+)
 from mimir.config import (
+    MIMIR_CONFIG_FILE,
     MIMIR_DIRS,
     MIMIR_PORT,
     MIMIR_PUSH_PATH,
-    MIMIR_CONFIG_FILE,
+    alertmanager_storage_config,
     block_storage_config,
     compactor_config,
     distributor_config,
     ingester_config,
+    memberlist_config,
     ruler_config,
     ruler_storage_config,
     server_config,
     store_gateway_config,
-    alertmanager_storage_config,
-    memberlist_config
-)
-from mimir.alertmanager import (
-    AlertManager,
-    DEFAULT_ALERT_TEMPLATE,
-    DEFAULT_ALERTMANAGER_CONFIG
 )
 
 logger = logging.getLogger(__name__)
@@ -60,15 +61,23 @@ class MimirCharm(CharmBase):
 
         self.framework.observe(self.on.mimir_pebble_ready, self._on_mimir_pebble_ready)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(self.on.receive_remote_write_relation_changed, self._on_remote_write_relation_changed)
+        self.framework.observe(
+            self.on.receive_remote_write_relation_changed,
+            self._on_remote_write_relation_changed,
+        )
 
-        self.framework.observe(self.on[self._peername].relation_joined, self._on_peer_relation_joined)
-        self.framework.observe(self.on[self._peername].relation_changed, self._on_peer_relation_changed)
-        self.framework.observe(self.on[self._peername].relation_departed, self._on_peer_relation_departed)
+        self.framework.observe(
+            self.on[self._peername].relation_joined, self._on_peer_relation_joined
+        )
+        self.framework.observe(
+            self.on[self._peername].relation_changed, self._on_peer_relation_changed
+        )
+        self.framework.observe(
+            self.on[self._peername].relation_departed, self._on_peer_relation_departed
+        )
 
     def _on_mimir_pebble_ready(self, event):
-        """Define and start a workload using the Pebble API.
-        """
+        """Define and start a workload using the Pebble API."""
         self._create_mimir_dirs()
         self._set_mimir_config()
 
@@ -95,8 +104,7 @@ class MimirCharm(CharmBase):
         self.unit.status = ActiveStatus()
 
     def _on_config_changed(self, _):
-        """Handle Mimir configuration chagne.
-        """
+        """Handle Mimir configuration chagne."""
         self._set_mimir_config()
         self._set_alertmanager_config()
         mimir_restarted = self._restart_mimir()
@@ -121,12 +129,16 @@ class MimirCharm(CharmBase):
     def _on_peer_relation_joined(self, event):
         if self.app.planned_units() > 1 and not self.config.get("s3", ""):
             self.unit.status = BlockedStatus("Replication requires object storage")
-            logger.debug("Mimir replication requires object storage, s3 configuration option must be set.")
+            logger.debug(
+                "Mimir replication requires object storage, s3 configuration option must be set."
+            )
 
         event.relation.data[self.unit]["peer_hostname"] = str(self.hostname)
 
     def _on_peer_relation_changed(self, _):
-        logger.debug("New memberlist : %s", memberlist_config(self.unit.name, self.peers))
+        logger.debug(
+            "New memberlist : %s", memberlist_config(self.unit.name, self.peers)
+        )
         self._set_mimir_config()
         self._restart_mimir()
 
@@ -134,7 +146,9 @@ class MimirCharm(CharmBase):
             self.unit.status = ActiveStatus()
 
     def _on_peer_relation_departed(self, _):
-        logger.debug("New memberlist : %s", memberlist_config(self.unit.name, self.peers))
+        logger.debug(
+            "New memberlist : %s", memberlist_config(self.unit.name, self.peers)
+        )
         self._set_mimir_config()
         self._restart_mimir()
 
@@ -194,7 +208,7 @@ class MimirCharm(CharmBase):
             "server": server_config(),
             "store_gateway": store_gateway_config(len(self.peers)),
             "alertmanager_storage": alertmanager_storage_config(),
-            "memberlist": memberlist_config(self.unit.name, self.peers)
+            "memberlist": memberlist_config(self.unit.name, self.peers),
         }
 
         return yaml.dump(config)
@@ -208,9 +222,11 @@ class MimirCharm(CharmBase):
 
         aconfig = {
             "template_files": {
-                "default_template": self.config["alertmanager_template"] or DEFAULT_ALERT_TEMPLATE,
+                "default_template": self.config["alertmanager_template"]
+                or DEFAULT_ALERT_TEMPLATE,
             },
-            "alertmanager_config": self.config["alertmanager_config"] or yaml.dump(DEFAULT_ALERTMANAGER_CONFIG)
+            "alertmanager_config": self.config["alertmanager_config"]
+            or yaml.dump(DEFAULT_ALERTMANAGER_CONFIG),
         }
         self._alertmanager.set_config(aconfig)
 
@@ -270,7 +286,7 @@ class MimirCharm(CharmBase):
             return peers
 
         for unit in self.peer_relation.units:
-            if (hostname := self.peer_relation.data[unit].get("peer_hostname")):
+            if hostname := self.peer_relation.data[unit].get("peer_hostname"):
                 peers[unit.name] = hostname
 
         return peers

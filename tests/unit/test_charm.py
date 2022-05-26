@@ -2,22 +2,23 @@
 # See LICENSE file for licensing details.
 
 import unittest
-import yaml
-
-from charm import MimirCharm
-from helpers import patch_network_get
-from mimir.alertmanager import AlertManager
-from mimir.config import MIMIR_CONFIG_FILE
-from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
-from ops.testing import Harness
 from unittest.mock import patch
 
-S3_CONFIG =  {
+import yaml
+from helpers import patch_network_get
+from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
+from ops.testing import Harness
+
+from charm import MimirCharm
+from mimir.alertmanager import AlertManager
+from mimir.config import MIMIR_CONFIG_FILE
+
+S3_CONFIG = {
     "endpoint": "s3.eu-west-1.amazonaws.com",
     "insecure": True,
     "bucket_name": "mimir_bucket",
     "secret_access_key": "mimir_s3_access_key",
-    "access_key_id": "mimir_s3_access_id"
+    "access_key_id": "mimir_s3_access_id",
 }
 CPU_OVER_USE_RULE_FILE = "tests/unit/alert_rules/cpu_overuse.json"
 
@@ -66,7 +67,7 @@ class TestCharm(unittest.TestCase):
         self.harness.add_relation_unit(peer_rel_id, second_unit_name)
         self.harness.update_relation_data(
             peer_rel_id, second_unit_name, {"peer_hostname": second_unit_name}
-            )
+        )
 
         # check Mimir memberlist now contains two nodes
         container = self.harness.charm.unit.get_container(self.name)
@@ -87,7 +88,7 @@ class TestCharm(unittest.TestCase):
         self.harness.add_relation_unit(peer_rel_id, second_unit_name)
         self.harness.update_relation_data(
             peer_rel_id, second_unit_name, {"peer_hostname": second_unit_name}
-            )
+        )
 
         # check Mimir memberlist now contains two nodes
         container = self.harness.charm.unit.get_container(self.name)
@@ -110,7 +111,7 @@ class TestCharm(unittest.TestCase):
         # a single peer unit is active regardless of object storage availability
         self.harness.container_pebble_ready(self.name)
         self.assertIsInstance(self.harness.charm.unit.status, ActiveStatus)
-        
+
         # adding additional peer units blocks if object storage is not available
         peer_rel_id = self.harness.add_relation(self.peername, self.name)
         self.harness.add_relation_unit(peer_rel_id, "mimir-k8s/1")
@@ -141,21 +142,23 @@ class TestCharm(unittest.TestCase):
         self.assertIsInstance(self.harness.charm.unit.status, ActiveStatus)
 
         # add remote write relation and set alert rules
-        remote_write_rel_id = self.harness.add_relation("receive-remote-write", "grafana-agent")
+        remote_write_rel_id = self.harness.add_relation(
+            "receive-remote-write", "grafana-agent"
+        )
         self.harness.add_relation_unit(remote_write_rel_id, "grafana-agent/0")
         with open(CPU_OVER_USE_RULE_FILE) as rule_file:
             with patch.object(
                 self.harness.charm._alertmanager, "set_alert_rule_group"
-                ) as mock_set_rules:
-                
+            ) as mock_set_rules:
+
                 # check Mimir charm does not set alert rules when there is no relation data
                 self.assertFalse(mock_set_rules.called)
                 self.harness.update_relation_data(
-                    remote_write_rel_id, 
-                    "grafana-agent", 
+                    remote_write_rel_id,
+                    "grafana-agent",
                     {
                         "alert_rules": rule_file.read(),
-                    }
+                    },
                 )
                 # check Mimir charm sets alert rules after relation data is set
                 self.assertTrue(mock_set_rules.called)
@@ -166,20 +169,24 @@ class TestCharm(unittest.TestCase):
         self.assertIsInstance(self.harness.charm.unit.status, MaintenanceStatus)
 
         # add remote write relation and set alert rules
-        remote_write_rel_id = self.harness.add_relation("receive-remote-write", "grafana-agent")
+        remote_write_rel_id = self.harness.add_relation(
+            "receive-remote-write", "grafana-agent"
+        )
         self.harness.add_relation_unit(remote_write_rel_id, "grafana-agent/0")
         with open(CPU_OVER_USE_RULE_FILE) as rule_file:
-            self.harness.update_relation_data(remote_write_rel_id, "grafana-agent", {"alert_rules": rule_file.read()})
+            self.harness.update_relation_data(
+                remote_write_rel_id, "grafana-agent", {"alert_rules": rule_file.read()}
+            )
             with patch.object(
                 self.harness.charm._alertmanager, "set_alert_rule_group"
-                ) as mock_set_rules:
-                
+            ) as mock_set_rules:
+
                 self.harness.update_relation_data(
-                    remote_write_rel_id, 
-                    "grafana-agent", 
+                    remote_write_rel_id,
+                    "grafana-agent",
                     {
                         "alert_rules": rule_file.read(),
-                    }
+                    },
                 )
                 # check Mimir charm has not sets alert rules even after relation data is set
                 self.assertFalse(mock_set_rules.called)
@@ -190,6 +197,6 @@ class TestCharm(unittest.TestCase):
                 # check charm is active when pebble becomes ready
                 self.harness.container_pebble_ready(self.name)
                 self.assertIsInstance(self.harness.charm.unit.status, ActiveStatus)
-                
+
                 # check alert rules have now been set
                 self.assertFalse(mock_set_rules.called)
