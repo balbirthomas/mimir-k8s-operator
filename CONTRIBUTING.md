@@ -50,7 +50,7 @@ $ juju deploy grafana-agent-k8s --channel=edge
 $ curl -s http://<MIMI-UNIT-IP-ADDRESS>:9009/api/v1/user_stats
 ```
 - Add a relation between Grafana Agent and Mimir
-- Wait a minute or so and now check that Mimir is geting metrics from Grafana agent
+- Wait a minute or so and now check that Mimir is getting metrics from Grafana agent
 - Add a relation between Mimir and Grafana
 ```sh
 $ juju add-relation mimir-k8s grafana-k8s
@@ -75,7 +75,7 @@ $ curl -s http://<MIMIR-UNIT-IP-ADDRESS>:9009/api/v1/alerts
 ```sh
 $ curl --data-binary '@/path/to/alert/rule/cpu_overuse.yaml' -H 'Content-Type: application/yaml' http://<MIMIR-UNIT-IP-ADDRESS>:9009/prometheus/config/v1/rules/anonymous
 ```
-For structure of alert rule file see this [disscussion thread](https://github.com/grafana/mimir/discussions/1863))
+For structure of alert rule file see this [discussion thread](https://github.com/grafana/mimir/discussions/1863))
 - Check alert rule has been set using the command line
 ```sh
 $ curl http://<MIMIR-UNIT-IP-ADDRESS>:9009/prometheus/config/v1/rules

@@ -17,7 +17,7 @@ Add a relation with Grafana agent and Grafana
 $ juju add-relation mimir-k8s grafana-agent-k8s
 $ juju add-relation mimir-k8s grafana
 ```
-Self monitoring metrics from Grafana agent shold now be visibile in the Grafana dashboard. On relating Grafana Agent charm to any other client charm, the metrics from the client charms will also become visible in the Grafana dashboard.
+Self monitoring metrics from Grafana agent should now be visible in the Grafana dashboard. On relating Grafana Agent charm to any other client charm, the metrics from the client charms will also become visible in the Grafana dashboard.
 
 ## Relations
 

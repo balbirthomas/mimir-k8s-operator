@@ -104,7 +104,7 @@ class MimirCharm(CharmBase):
         self.unit.status = ActiveStatus()
 
     def _on_config_changed(self, _):
-        """Handle Mimir configuration chagne."""
+        """Handle Mimir configuration change."""
         self._set_mimir_config()
         self._set_alertmanager_config()
         mimir_restarted = self._restart_mimir()
