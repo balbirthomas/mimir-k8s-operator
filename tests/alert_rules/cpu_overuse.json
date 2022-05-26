@@ -1,0 +1,25 @@
+{
+	"groups": [
+			{
+				"name": "lma_1459de85-94f2-482a-80de-351931733250_grafana-agent-k8s_grafana-agent-k8s_grafana_agent_unavailable_alerts",
+				"rules": [
+					{
+						"alert": "CPUOverUse",
+						"expr": "process_cpu_seconds > 2", 
+						"for": "0m", 
+						"labels": {
+							"severity": "low", 
+							"juju_model": "lma", 
+							"juju_model_uuid": "1459de85-94f2-482a-80de-351931733250", 
+							"juju_application": "grafana-agent-k8s", 
+							"juju_charm": "grafana-agent-k8s"
+						}, 
+						"annotations": {
+							"summary": "Grafana Agent {{ $labels.juju_model }}/{{ $labels.juju_unit }} unavailable", 
+							"description": "The Grafana Agent {{ $labels.juju_model }} {{ $labels.juju_unit }} is unavailable LABELS = {{ $labels }}\n"
+						}
+					}
+				]
+			}
+	]
+}
