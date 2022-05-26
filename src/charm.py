@@ -219,13 +219,13 @@ class MimirCharm(CharmBase):
             self.unit.status = WaitingStatus("Waiting for Pebble ready")
             return False
 
+        cfg = self.config["alertmanager_template"] or DEFAULT_ALERT_TEMPLATE
+        tpl = self.config["alertmanager_config"] or yaml.dump(DEFAULT_ALERTMANAGER_CONFIG)
         aconfig = {
             "template_files": {
-                "default_template": self.config["alertmanager_template"]
-                or DEFAULT_ALERT_TEMPLATE,
+                "default_template": cfg,
             },
-            "alertmanager_config": self.config["alertmanager_config"]
-            or yaml.dump(DEFAULT_ALERTMANAGER_CONFIG),
+            "alertmanager_config": tpl,
         }
         self._alertmanager.set_config(aconfig)
 
