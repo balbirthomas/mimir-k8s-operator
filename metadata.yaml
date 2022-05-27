@@ -44,4 +44,5 @@ storage:
 resources:
   mimir-image:
     type: oci-image
-    description: OCI image for mimir (grafana/mimir:latest)
+    description: OCI image for Mimir
+    upstream-source: grafana/mimir:latest
