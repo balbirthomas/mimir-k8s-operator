@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+# Copyright 2022 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+"""A interface to the Mimir Alertmanager API."""
+
 import logging
 from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin
@@ -30,13 +36,28 @@ DEFAULT_ALERTMANAGER_CONFIG = {
 
 
 class AlertManager:
+    """A Mimir Alertmanger."""
     def __init__(self, host="localhost", tenant="anonymous", timeout=10):
+        """Construct and Mimir Alertmanager object.
+
+        Args:
+            host: string hostname or address of Alertmager which this
+                object must interface with.
+            tenant: string tenant ID of Mimir Alertmanager.
+            timeout: default timeout in seconds for API requests.
+        """
         self._tenant = tenant
         self._host = host
         self._timeout = timeout
         self._base_url = f"http://{self._host}:{MIMIR_PORT}"
 
     def set_config(self, config):
+        """Set and Mimir Alertmanger configuration.
+
+        Args:
+            config: A dictionary representing a valid Mimir Alertmanager
+                configuration.
+        """
         url = urljoin(self._base_url, "/api/v1/alerts")
         headers = {"Content-Type": "application/yaml"}
         post_data = yaml.dump(config).encode("utf-8")
@@ -45,6 +66,11 @@ class AlertManager:
         return response
 
     def set_alert_rule_group(self, group):
+        """Set a new alert rule group.
+
+        Args:
+            group: a dictionary representing a single alert rule group.
+        """
         url = urljoin(self._base_url, f"/prometheus/config/v1/rules/{self._tenant}")
         headers = {"Content-Type": "application/yaml"}
         post_data = yaml.dump(group).encode("utf-8")
@@ -53,6 +79,11 @@ class AlertManager:
         return response
 
     def delete_alert_rule_group(self, groupname):
+        """Delete an alert rule group.
+
+        Args:
+            groupname: a string representing the name of group to be deleted.
+        """
         url = urljoin(
             self._base_url, f"/prometheus/config/v1/rules/{self._tenant}/{groupname}"
         )
@@ -61,6 +92,7 @@ class AlertManager:
         return response
 
     def _get(self, url, headers=None, timeout=None, encoding="utf-8") -> str:
+        """Make a HTTP GET request to Mimir Alertmanager."""
         body = ""
         request = Request(url, headers=headers or {}, method="GET")
         timeout = timeout if timeout else self._timeout
@@ -86,6 +118,7 @@ class AlertManager:
         return body
 
     def _post(self, url, post_data, headers=None, timeout=None) -> str:
+        """Make a HTTP POST request to Mimir Alertmanager."""
         status = ""
         timeout = timeout if timeout else self._timeout
         request = Request(url, headers=headers or {}, data=post_data, method="POST")
@@ -108,6 +141,7 @@ class AlertManager:
         return status
 
     def _delete(self, url, headers=None, timeout=None) -> str:
+        """Make a HTTP DELETE request to Mimir Alertmanager."""
         status = ""
         timeout = timeout if timeout else self._timeout
         request = Request(url, headers=headers or {}, method="DELETE")
