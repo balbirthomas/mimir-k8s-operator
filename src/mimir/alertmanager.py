@@ -29,14 +29,13 @@ DEFAULT_ALERTMANAGER_CONFIG = {
         "repeat_interval": "1h",
         "receiver": "dummy",
     },
-    "receivers": [
-        {"name": "dummy", "webhook_configs": [{"url": "http://127.0.0.1:5001/"}]}
-    ],
+    "receivers": [{"name": "dummy", "webhook_configs": [{"url": "http://127.0.0.1:5001/"}]}],
 }
 
 
 class AlertManager:
     """A Mimir Alertmanger."""
+
     def __init__(self, host="localhost", tenant="anonymous", timeout=10):
         """Construct and Mimir Alertmanager object.
 
@@ -84,9 +83,7 @@ class AlertManager:
         Args:
             groupname: a string representing the name of group to be deleted.
         """
-        url = urljoin(
-            self._base_url, f"/prometheus/config/v1/rules/{self._tenant}/{groupname}"
-        )
+        url = urljoin(self._base_url, f"/prometheus/config/v1/rules/{self._tenant}/{groupname}")
         response = self._delete(url)
 
         return response

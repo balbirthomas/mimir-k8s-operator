@@ -168,9 +168,7 @@ class MimirCharm(CharmBase):
         In response to changes in peer relation a new Mimir
         configuration is set and Mimir restarted.
         """
-        logger.debug(
-            "New memberlist : %s", memberlist_config(self.unit.name, self.peers)
-        )
+        logger.debug("New memberlist : %s", memberlist_config(self.unit.name, self.peers))
         self._set_mimir_config()
         self._restart_mimir()
 
@@ -183,9 +181,7 @@ class MimirCharm(CharmBase):
         In response to a peer relation departing a new Mimir
         configuration is set and Mimir restarted.
         """
-        logger.debug(
-            "New memberlist : %s", memberlist_config(self.unit.name, self.peers)
-        )
+        logger.debug("New memberlist : %s", memberlist_config(self.unit.name, self.peers))
         self._set_mimir_config()
         self._restart_mimir()
 

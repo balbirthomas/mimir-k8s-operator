@@ -141,9 +141,7 @@ class TestCharm(unittest.TestCase):
         self.assertIsInstance(self.harness.charm.unit.status, ActiveStatus)
 
         # add remote write relation and set alert rules
-        remote_write_rel_id = self.harness.add_relation(
-            "receive-remote-write", "grafana-agent"
-        )
+        remote_write_rel_id = self.harness.add_relation("receive-remote-write", "grafana-agent")
         self.harness.add_relation_unit(remote_write_rel_id, "grafana-agent/0")
         with open(CPU_OVER_USE_RULE_FILE) as rule_file:
             with patch.object(
@@ -168,9 +166,7 @@ class TestCharm(unittest.TestCase):
         self.assertIsInstance(self.harness.charm.unit.status, MaintenanceStatus)
 
         # add remote write relation and set alert rules
-        remote_write_rel_id = self.harness.add_relation(
-            "receive-remote-write", "grafana-agent"
-        )
+        remote_write_rel_id = self.harness.add_relation("receive-remote-write", "grafana-agent")
         self.harness.add_relation_unit(remote_write_rel_id, "grafana-agent/0")
         with open(CPU_OVER_USE_RULE_FILE) as rule_file:
             self.harness.update_relation_data(
