@@ -4,11 +4,11 @@
 
 options:
   tsdb_block_retention_period:
-    default: 2h
+    default: 24h
     description: |
       Length of time for which metrics TSDB blocks are
       stored locally before being shipped to long term
-      storage.
+      storage. This value must be greater than 2h (2 hours).
     type: string
   alertmanager_config:
     type: string

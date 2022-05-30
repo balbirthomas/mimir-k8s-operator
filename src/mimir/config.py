@@ -19,11 +19,11 @@ MIMIR_DIRS = {
 }
 
 
-def block_storage_config(s3_config):
+def block_storage_config(s3_config, retention_period):
     """Mimir Blocks Storage configuration."""
     cfg = {
         "bucket_store": {"sync_dir": MIMIR_DIRS["bucket_store"]},
-        "tsdb": {"dir": MIMIR_DIRS["tsdb"]},
+        "tsdb": {"dir": MIMIR_DIRS["tsdb"], "retention_period": retention_period},
     }
 
     if s3_config:

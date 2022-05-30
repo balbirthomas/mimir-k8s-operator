@@ -239,10 +239,11 @@ class MimirCharm(CharmBase):
     def _mimir_config(self) -> str:
         """Generate a Mimir workload configuration."""
         s3_config = yaml.safe_load(self.config.get("s3", "{}"))
+        retention_period = self.config.get("tsdb_block_retention_period", "24h")
 
         config = {
             "multitenancy_enabled": False,
-            "blocks_storage": block_storage_config(s3_config),
+            "blocks_storage": block_storage_config(s3_config, retention_period),
             "compactor": compactor_config(),
             "distributor": distributor_config(),
             "ingester": ingester_config(len(self.peers)),
