@@ -4,6 +4,7 @@
 
 """A interface to the Mimir Alertmanager API."""
 
+import json
 import logging
 from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin
@@ -50,7 +51,7 @@ class AlertManager:
         self._timeout = timeout
         self._base_url = f"http://{self._host}:{MIMIR_PORT}"
 
-    def set_config(self, config):
+    def set_config(self, config) -> str:
         """Set and Mimir Alertmanger configuration.
 
         Args:
@@ -64,7 +65,44 @@ class AlertManager:
 
         return response
 
-    def set_alert_rule_group(self, group):
+    def get_alert_rules(self) -> dict:
+        """Get all alert rules.
+
+        Returns:
+            All alert rules currently set for Mimir Alertmanager. The rules
+            are returned as a dictionary. The keys of the dictionary are the
+            tenant IDs. The values of this key is a list of alert rule group
+            defined for that specific tenant. Each alert rule group in the
+            list is itself a dictionary with two keys "name" which is the name
+            of the alert rule group and "rules" which is a list of alert rules
+            in the group. The list of alert rules is itself a list of dictionaries.
+            Each alert rule dictionary contains the alert rule, name, expression,
+            labels and annotations.
+        """
+        url = urljoin(self._base_url, "/prometheus/config/v1/rules")
+        response = self._get(url)
+        rules = {}
+        if response:
+            rules = yaml.safe_load(response)
+
+        return rules
+
+    def get_alerts(self) -> dict:
+        """Get currently firing alerts.
+
+        Returns:
+            All alerts that are currently firing.
+        """
+        alerts = {}
+        url = urljoin(self._base_url, "/prometheus/api/v1/alerts")
+        response = self._get(url)
+
+        if response:
+            alerts = json.loads(response)
+
+        return alerts
+
+    def set_alert_rule_group(self, group) -> str:
         """Set a new alert rule group.
 
         Args:
@@ -77,7 +115,7 @@ class AlertManager:
 
         return response
 
-    def delete_alert_rule_group(self, groupname):
+    def delete_alert_rule_group(self, groupname) -> str:
         """Delete an alert rule group.
 
         Args:
