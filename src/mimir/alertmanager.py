@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_ALERT_TEMPLATE = r"""|
     {{ define "__alertmanager" }}AlertManager{{ end }}
-    {{ define "__alertmanagerURL" }}{{ .ExternalURL }}/
+    {{ define "__alertmanagerURL" }}{{ .ExternalURL }}/#/alerts?receiver={{ .Receiver | urlquery }}{{ end }}
 """
 
 DEFAULT_ALERTMANAGER_CONFIG = {
