@@ -36,6 +36,12 @@ def block_storage_config(s3_config, retention_period):
     return cfg
 
 
+def frontend_config(peers):
+    cfg = {"instance_interface_names": list(peers.values())}
+
+    return cfg
+
+
 def compactor_config():
     """Mimir Compactor configuration."""
     cfg = {
@@ -53,7 +59,7 @@ def distributor_config():
     return cfg
 
 
-def ingester_config(npeers):
+def ingester_config():
     """Mimir Ingestor configuration."""
     cfg = {
         "ring": {
@@ -61,7 +67,7 @@ def ingester_config(npeers):
             "kvstore": {
                 "store": "memberlist",
             },
-            "replication_factor": npeers,
+            "replication_factor": 1,
         }
     }
 
@@ -89,9 +95,9 @@ def server_config():
     return cfg
 
 
-def store_gateway_config(npeers):
+def store_gateway_config():
     """Mimir Store Gateway configuration."""
-    cfg = {"sharding_ring": {"replication_factor": npeers}}
+    cfg = {"sharding_ring": {"replication_factor": 1}}
 
     return cfg
 
