@@ -1,3 +1,5 @@
+lightkube
+lightkube-models
 ops >= 1.4.0
 pyaml
 serialized_data_interface

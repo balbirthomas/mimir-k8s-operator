@@ -12,6 +12,7 @@ import socket
 
 import yaml
 from charms.grafana_k8s.v0.grafana_source import GrafanaSourceProvider
+from charms.observability_libs.v0.kubernetes_service_patch import KubernetesServicePatch
 from charms.prometheus_k8s.v0.prometheus_remote_write import (
     PrometheusRemoteWriteProvider,
 )
@@ -63,6 +64,9 @@ class MimirCharm(CharmBase):
         self.framework.observe(
             self.ingress.on.revoked, self._on_ingress_changed
         )
+
+        # Kubernetes service patcher
+        self.service_patcher = KubernetesServicePatch(self, [(f"{self.app.name}", MIMIR_PORT)])
 
         # library objects for managing charm relations
         self.remote_write_provider = PrometheusRemoteWriteProvider(
@@ -335,7 +339,7 @@ class MimirCharm(CharmBase):
             A string providing to URL to be used as a the
             Grafana data source for this unit.
         """
-        url = f"http://{self.hostname}:{MIMIR_PORT}/prometheus"
+        url = f"http://{self.app.name}:{MIMIR_PORT}/prometheus"
 
         if self.ingress.is_ready():
             url = f"{self.ingress.url}/prometheus"
