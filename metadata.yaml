@@ -19,7 +19,7 @@ provides:
 
 requires:
   ingress:
-    interface: ingress_per_unit
+    interface: ingress
     limit: 1
 
 peers:

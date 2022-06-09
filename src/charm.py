@@ -15,6 +15,7 @@ from charms.grafana_k8s.v0.grafana_source import GrafanaSourceProvider
 from charms.prometheus_k8s.v0.prometheus_remote_write import (
     PrometheusRemoteWriteProvider,
 )
+from charms.traefik_k8s.v0.ingress import IngressPerAppRequirer
 from ops.charm import CharmBase
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
@@ -54,6 +55,15 @@ class MimirCharm(CharmBase):
         self._peername = "mimir-peers"
         self._alertmanager = AlertManager()
 
+        # Ingress handler
+        self.ingress = IngressPerAppRequirer(self, host=self._name, port=MIMIR_PORT)
+        self.framework.observe(
+            self.ingress.on.ready, self._on_ingress_changed
+        )
+        self.framework.observe(
+            self.ingress.on.revoked, self._on_ingress_changed
+        )
+
         # library objects for managing charm relations
         self.remote_write_provider = PrometheusRemoteWriteProvider(
             self, endpoint_port=MIMIR_PORT, endpoint_path=MIMIR_PUSH_PATH
@@ -61,6 +71,7 @@ class MimirCharm(CharmBase):
         self.grafana_source_provider = GrafanaSourceProvider(
             self, source_type="prometheus", source_url=self._grafana_source_url
         )
+
         # charm lifecycle event handlers
         self.framework.observe(self.on.mimir_pebble_ready, self._on_mimir_pebble_ready)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
@@ -111,6 +122,10 @@ class MimirCharm(CharmBase):
 
         self._set_alertmanager_config()
         self.unit.status = ActiveStatus()
+
+    def _on_ingress_changed(self, _):
+        """Update Grafana source on ingress changed."""
+        self.grafana_source_provider.update_source(self._grafana_source_url)
 
     def _on_config_changed(self, _):
         """Handle Mimir configuration change.
@@ -320,7 +335,12 @@ class MimirCharm(CharmBase):
             A string providing to URL to be used as a the
             Grafana data source for this unit.
         """
-        return f"http://{self.hostname}:{MIMIR_PORT}/prometheus"
+        url = f"http://{self.hostname}:{MIMIR_PORT}/prometheus"
+
+        if self.ingress.is_ready():
+            url = f"{self.ingress.url}/prometheus"
+
+        return url
 
     @property
     def peer_relation(self):
