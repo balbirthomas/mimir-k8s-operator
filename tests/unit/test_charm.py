@@ -23,6 +23,7 @@ CPU_OVER_USE_RULE_FILE = "tests/unit/alert_rules/cpu_overuse.json"
 
 
 class TestCharm(unittest.TestCase):
+    @patch("charm.KubernetesServicePatch", lambda *args: None)
     def setUp(self):
         self.harness = Harness(MimirCharm)
         self.harness.set_model_name("charm_test")
