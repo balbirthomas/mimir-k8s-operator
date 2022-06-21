@@ -37,6 +37,7 @@ def block_storage_config(s3_config, retention_period):
 
 
 def frontend_config(peers):
+    """Mimir frontend configuration."""
     cfg = {"instance_interface_names": list(peers.values())}
 
     return cfg
