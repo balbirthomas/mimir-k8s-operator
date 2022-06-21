@@ -75,6 +75,7 @@ class MimirCharm(CharmBase):
         # charm lifecycle event handlers
         self.framework.observe(self.on.mimir_pebble_ready, self._on_mimir_pebble_ready)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(self.on.upgrade_charm, self._on_upgrade_charm)
         self.framework.observe(
             self.on.receive_remote_write_relation_changed,
             self._on_remote_write_relation_changed,
@@ -144,6 +145,23 @@ class MimirCharm(CharmBase):
 
         if self.app.planned_units() > 1 and not self.config.get("s3", ""):
             self.unit.status = BlockedStatus("Replication requires object storage")
+
+    def _on_upgrade_charm(self, _):
+        """Handle charm upgrades.
+
+        In response to charm upgrade a Mimir configuration
+        is regenerated and Mimir restarted.
+        """
+        container = self.unit.get_container(self._name)
+
+        if not container.can_connect():
+            self.unit.status = WaitingStatus("Waiting for Pebble ready")
+            return
+        self._set_mimir_config()
+        mimir_restarted = self._restart_mimir()
+
+        if mimir_restarted:
+            self.unit.status = ActiveStatus()
 
     def _on_remote_write_relation_changed(self, _):
         """Handle change with remote write consumers.
