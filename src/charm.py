@@ -58,12 +58,8 @@ class MimirCharm(CharmBase):
 
         # Ingress handler
         self.ingress = IngressPerAppRequirer(self, host=self._name, port=MIMIR_PORT)
-        self.framework.observe(
-            self.ingress.on.ready, self._on_ingress_changed
-        )
-        self.framework.observe(
-            self.ingress.on.revoked, self._on_ingress_changed
-        )
+        self.framework.observe(self.ingress.on.ready, self._on_ingress_changed)
+        self.framework.observe(self.ingress.on.revoked, self._on_ingress_changed)
 
         # Kubernetes service patcher
         self.service_patcher = KubernetesServicePatch(self, [(f"{self.app.name}", MIMIR_PORT)])
