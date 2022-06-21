@@ -49,6 +49,16 @@ class TestCharm(unittest.TestCase):
         plan = self.harness.get_container_pebble_plan(self.name)
         self.assertIn(self.name, plan.services)
 
+    def test_mimir_is_reconfigured_and_restarted_on_upgrade(self):
+        self.harness.container_pebble_ready(self.name)
+        self.harness.charm.on.upgrade_charm.emit()
+        container = self.harness.charm.unit.get_container(self.name)
+        config = yaml.safe_load(container.pull(MIMIR_CONFIG_FILE))
+        # check for any expected key in config file
+        self.assertIn("memberlist", config)
+        # Active status is set when single mimir unit is restarted
+        self.assertIsInstance(self.harness.charm.unit.status, ActiveStatus)
+
     def test_charm_reconfigures_mimir_on_peer_relation_chagned(self):
         # create a peer relation and unit after pebble is ready
         self.harness.container_pebble_ready(self.name)
