@@ -6,9 +6,10 @@
 
 import json
 import logging
+import urllib
 from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
 import yaml
 
@@ -51,12 +52,15 @@ class AlertManager:
         self._timeout = timeout
         self._base_url = f"http://{self._host}:{MIMIR_PORT}"
 
-    def set_config(self, config) -> str:
+    def set_config(self, config):
         """Set and Mimir Alertmanger configuration.
 
         Args:
             config: A dictionary representing a valid Mimir Alertmanager
                 configuration.
+
+        Returns:
+            urllib response object
         """
         url = urljoin(self._base_url, "/api/v1/alerts")
         headers = {"Content-Type": "application/yaml"}
@@ -102,11 +106,14 @@ class AlertManager:
 
         return alerts
 
-    def set_alert_rule_group(self, group) -> str:
+    def set_alert_rule_group(self, group):
         """Set a new alert rule group.
 
         Args:
             group: a dictionary representing a single alert rule group.
+
+        Returns:
+            urllib response object.
         """
         url = urljoin(self._base_url, f"/prometheus/config/v1/rules/{self._tenant}")
         headers = {"Content-Type": "application/yaml"}
@@ -115,11 +122,14 @@ class AlertManager:
 
         return response
 
-    def delete_alert_rule_group(self, groupname) -> str:
+    def delete_alert_rule_group(self, groupname):
         """Delete an alert rule group.
 
         Args:
             groupname: a string representing the name of group to be deleted.
+
+        Returns:
+            urllib response object.
         """
         url = urljoin(self._base_url, f"/prometheus/config/v1/rules/{self._tenant}/{groupname}")
         response = self._delete(url)
@@ -127,17 +137,21 @@ class AlertManager:
         return response
 
     def _get(self, url, headers=None, timeout=None, encoding="utf-8") -> str:
-        """Make a HTTP GET request to Mimir Alertmanager."""
+        """Make a HTTP GET request to Mimir Alertmanager.
+
+        Returns:
+            HTTP response body as a string.
+        """
         body = ""
         request = Request(url, headers=headers or {}, method="GET")
         timeout = timeout if timeout else self._timeout
 
         try:
-            with urlopen(request, timeout=timeout) as response:
-                body = response.read()
-                charset = response.headers.get_content_charset()
-                enc = charset if charset else encoding
-                body = body.decode(encoding=enc)
+            response = urllib.request.urlopen(request, timeout=timeout)
+            body = response.read()
+            charset = response.headers.get_content_charset()
+            enc = charset if charset else encoding
+            body = body.decode(encoding=enc)
         except HTTPError as error:
             logger.debug(
                 "Failed to fetch %s, status: %s, reason: %s",
@@ -152,15 +166,18 @@ class AlertManager:
 
         return body
 
-    def _post(self, url, post_data, headers=None, timeout=None) -> str:
-        """Make a HTTP POST request to Mimir Alertmanager."""
-        status = ""
+    def _post(self, url, post_data, headers=None, timeout=None):
+        """Make a HTTP POST request to Mimir Alertmanager.
+
+        Returns:
+            urllib response object.
+        """
+        response = ""
         timeout = timeout if timeout else self._timeout
         request = Request(url, headers=headers or {}, data=post_data, method="POST")
 
         try:
-            with urlopen(request, timeout=timeout) as response:
-                status = response.status
+            response = urllib.request.urlopen(request, timeout=timeout)
         except HTTPError as error:
             logger.debug(
                 "Failed posting to %s, status: %s, reason: %s",
@@ -173,17 +190,20 @@ class AlertManager:
         except TimeoutError:
             logger.debug("Request timeout during posting to URL %s", url)
 
-        return status
+        return response
 
     def _delete(self, url, headers=None, timeout=None) -> str:
-        """Make a HTTP DELETE request to Mimir Alertmanager."""
-        status = ""
+        """Make a HTTP DELETE request to Mimir Alertmanager.
+
+        Returns:
+            urllib response object.
+        """
+        response = ""
         timeout = timeout if timeout else self._timeout
         request = Request(url, headers=headers or {}, method="DELETE")
 
         try:
-            with urlopen(request, timeout=timeout) as response:
-                status = response.status
+            response = urllib.request.urlopen(request, timeout=timeout)
         except HTTPError as error:
             logger.debug(
                 "Delete failed %s, status: %s, reason: %s",
@@ -196,4 +216,4 @@ class AlertManager:
         except TimeoutError:
             logger.debug("Request timeout deleting %s", url)
 
-        return status
+        return response
