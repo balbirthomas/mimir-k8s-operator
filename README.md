@@ -17,17 +17,19 @@ Add a relation with Grafana agent and Grafana
 $ juju add-relation mimir-k8s grafana-agent-k8s
 $ juju add-relation mimir-k8s grafana
 ```
-Self monitoring metrics from Grafana agent should now be visible in the Grafana dashboard. On relating Grafana Agent charm to any other client charm, the metrics from the client charms will also become visible in the Grafana dashboard.
+Self monitoring metrics from Grafana agent should now be visible in the Grafana dashboard. On relating Grafana Agent charm to any other client charm, the metrics from the client charms will also become visible in the Grafana dashboard. Documentation of [Grafana Agent charm][Grafana Agent Charm] details how this may be done.
 
 ## Relations
 
 This current supports the relations with the following charms
 - [Grafana Agent][Grafana Agent Charm] for ingestion of metrics using Prometheus Remote Write.
 - [Grafana][Grafana Charm] for visualization of metrics using Grafana Dashboards.
+- An ingress charm such as [Traefik][Traefik Charm] may be used to expose Mimir as a Grafana data source
+  through the Kubernetes ingress service.
 
 ## OCI Images
 
-This charm uses the latest version of the Grafana Mimir docker image.
+This charm uses the latest version of the Grafana Mimir docker image (grafana/mimir:latest).
 
 ## Contributing
 
@@ -42,3 +44,4 @@ on enhancements to this charm following best practice guidelines, and
 [Alertmanager]: https://grafana.com/docs/mimir/latest/operators-guide/architecture/components/alertmanager/
 [Grafana Agent Charm]: https://charmhub.io/grafana-agent-k8s
 [Grafana Charm]: https://charmhub.io/grafana-k8s
+[Traefik Charm]: https://charmhub.io/traefik-k8s
