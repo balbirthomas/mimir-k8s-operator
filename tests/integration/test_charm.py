@@ -98,3 +98,19 @@ async def test_mimir_charm_ingests_metrics_alert_rules_and_raises_alerts(
     assert alert_labels["alertname"] == alert_rule_name
     assert "juju_application" in labels
     assert labels["juju_application"] == "grafana-agent-k8s"
+
+
+async def test_alert_rules_are_removed_on_relation_broken(
+    ops_test: OpsTest, mimir_charm
+):
+    # remove grafana agent and wait for Mimir to become stable
+    await ops_test.model.applications[grafana_agent_app_name].remove()
+    await ops_test.model.wait_for_idle(apps=[mimir_app_name], status="active")
+
+    # fetch interface to Mimir alertmanager
+    mimir_address = await unit_address(ops_test, mimir_app_name, 0)
+    alertmanager = AlertManager(mimir_address)
+
+    # get current list of rules and check there are no alert rule groups
+    alert_rule_groups = alertmanager.get_alert_rules()
+    assert len(alert_rule_groups) == 0
