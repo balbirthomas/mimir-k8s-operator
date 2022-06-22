@@ -80,6 +80,11 @@ class MimirCharm(CharmBase):
             self.on.receive_remote_write_relation_changed,
             self._on_remote_write_relation_changed,
         )
+        self.framework.observe(
+            self.on.receive_remote_write_relation_broken,
+            self._on_remote_write_relation_broken,
+        )
+
         # peer relation event handlers
         self.framework.observe(
             self.on[self._peername].relation_joined, self._on_peer_relation_joined
@@ -175,6 +180,24 @@ class MimirCharm(CharmBase):
         if not container.can_connect():
             self.unit.status = WaitingStatus("Waiting for Pebble ready")
             return
+
+        alerts_for_all_relations = self.remote_write_provider.alerts()
+        for _, alerts in alerts_for_all_relations.items():
+            self._set_alert_rules(alerts["groups"])
+
+    def _on_remote_write_relation_broken(self, event):
+        container = self.unit.get_container(self._name)
+
+        if not container.can_connect():
+            self.unit.status = WaitingStatus("Waiting for Pebble ready")
+            # relation broken can not be ignored because of stale alert rules
+            event.defer()
+            return
+
+        current_alert_rules = self._alertmanager.get_alert_rules()
+        for _, rule_groups in current_alert_rules.items():
+            for group in rule_groups:
+                self._alertmanager.delete_alert_rule_group(group["name"])
 
         alerts_for_all_relations = self.remote_write_provider.alerts()
         for _, alerts in alerts_for_all_relations.items():
