@@ -1,50 +1,62 @@
-# mimir
+# Mimir Operator
+
+## Overview
+
+This documents explains the processes and practices recommended for
+contributing enhancements to the Prometheus charm.
+
+- Generally, before developing enhancements to this charm, you should consider
+  [opening an issue ](https://github.com/balbirthomas/mimir-k8s-operator) explaining
+  your use case.
+- If you would like to chat with us about your use-cases or proposed
+  implementation, you can reach us at
+  [Canonical Mattermost public channel](https://chat.charmhub.io/charmhub/channels/charm-dev)
+  or [Discourse](https://discourse.charmhub.io/).
+  The primary author of this charm is available on the Mattermost channel as
+  `@balbir-thomas`.
+- Familiarising yourself with the
+  [Charmed Operator Framework](https://juju.is/docs/sdk)
+  library will help you a lot when working on new features or bug fixes.
+- All enhancements require review before being merged. Code review
+  typically examines
+  + code quality
+  + test coverage
+  + user experience for Juju administrators
+  this charm.
+- Please help us out in ensuring easy to review branches by rebasing
+  your pull request branch onto the `main` branch. This also avoids
+  merge commits and creates a linear Git commit history.
 
 ## Developing
 
 Create and activate a virtualenv with the development requirements:
 
-    virtualenv -p python3 venv
-    source venv/bin/activate
-    pip install -r requirements-dev.txt
+```sh
+$ virtualenv -p python3 venv
+$ source venv/bin/activate
+```
 
-## Code overview
+### Build and deploy charm
 
-This charm supports three relations
-- Grafana Agent
-- Grafana
-- Ingress
-
-## Intended use case
-
-This charm manages Grafana Mimir in monolithic mode.
-
-## Roadmap
-
-- Implement charm scale up/down and clustering of Mimir Components
-- Handle charm upgrade event
-- Handle remote write consumer relation departed event
-- Refine charm life cycle with respect to
-  + Restart Grafana Mimir workload when necessary (eg. after config changed)
-  + Remove alert rules on remote write consumer relation departed events
-- Support an Ingress relation
-- Implement unit tests
-- Implement integration tests
-- Provide CI/CD github workflows using Tox
-
-## Testing
-
-### Manual Testing
+This section provides a few tips on how to interact with the Mimir workload using
+its API to aid debugging during development.
 
 - Build and deploy this charm
 ```sh
+$ charmcraft pack
 $ juju deploy ./mimir-k8s_ubuntu-20.04-amd64.charm --resource mimir-image=grafana/mimir:latest
 ```
+
+### Add charm relations
+
 - Deploy Grafana agent and Grafana
 ```sh
 $ juju deploy grafana-k8s --channel=edge
 $ juju deploy grafana-agent-k8s --channel=edge
 ```
+
+### Inspect charm behaviour
+
 - Check Mimir is not acquiring any metrics as yet
 ```sh
 $ curl -s http://<MIMI-UNIT-IP-ADDRESS>:9009/api/v1/user_stats
@@ -91,9 +103,44 @@ $ curl -s http://<MIMIR-UNIT-IP-ADDRESS>:9009/prometheus/api/v1/alerts | jq
 $ curl -X DELETE http://<MIMIR-UNIT-IP-ADDRESS>:9009/prometheus/config/v1/rules/anonymous/<RULE-GROUP-NAME>
 ```
 
-### Unit Tests
-The Python operator framework includes a very nice harness for testing
-operator behaviour without full deployment. Just `run_tests`:
+## Testing
+
+### Linting
+
+Code linting is supported using
+
 ```sh
-    ./run_tests
+$ tox -e lint
 ```
+
+To fix any linting errors use
+
+```sh
+$ tox -e fmt
+```
+
+### Unit Tests
+Unit tests may be run using the command line
+
+```sh
+$ tox -e unit
+```
+
+### Integration Tests
+
+Integration tests may be run using the command line
+
+```sh
+$ tox -e integration
+```
+
+## Roadmap
+
+- Support relation with an object storage provider charm.
+- Support relation with cache provider charms through which object storage may be proxied.
+- Implement ingester shutdown with flush to object storage workflow.
+- Implement HA Tracker support both in Mimir Charm and Prometheus Remote Write Library.
+- Implement a Mimir tester charm that can support wide range of integration tests.
+- Implement end to end test cases with multiple Grafana Agents scraping the same
+  metrics endpoint and remote writing to multiple Mimir instances.
+- Benchmark charm under load to evaluate scalability.
