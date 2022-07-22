@@ -128,6 +128,7 @@ events may not be needed.
 import json
 import logging
 import re
+import socket
 from typing import Any, Dict, List, Optional, Union
 
 from ops.charm import (
@@ -159,7 +160,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 9
+LIBPATCH = 11
 
 logger = logging.getLogger(__name__)
 
@@ -225,10 +226,8 @@ class RelationRoleMismatchError(Exception):
         self._relation_name = relation_name
         self.expected_relation_interface = expected_relation_role
         self.actual_relation_role = actual_relation_role
-        self.message = (
-            "The '{}' relation has role '{}' rather than the expected '{}'".format(
-                relation_name, repr(actual_relation_role), repr(expected_relation_role)
-            )
+        self.message = "The '{}' relation has role '{}' rather than the expected '{}'".format(
+            relation_name, repr(actual_relation_role), repr(expected_relation_role)
         )
 
         super().__init__(self.message)
@@ -277,9 +276,7 @@ def _validate_relation_by_interface_and_direction(
                 relation_name, RelationRole.requires, RelationRole.provides
             )
     else:
-        raise Exception(
-            "Unexpected RelationDirection: {}".format(expected_relation_role)
-        )
+        raise Exception("Unexpected RelationDirection: {}".format(expected_relation_role))
 
 
 class SourceFieldsMissingError(Exception):
@@ -327,6 +324,7 @@ class GrafanaSourceProvider(Object):
         source_url: Optional[str] = "",
         refresh_event: Optional[BoundEvent] = None,
         relation_name: str = DEFAULT_RELATION_NAME,
+        extra_fields: dict = None,
     ) -> None:
         """Construct a Grafana charm client.
 
@@ -365,6 +363,8 @@ class GrafanaSourceProvider(Object):
             refresh_event: a :class:`CharmEvents` event on which the IP
                 address should be refreshed in case of pod or
                 machine/VM restart.
+            extra_fields: a :dict: which is used for additional information required
+                for some datasources in the `jsonData` field
         """
         _validate_relation_by_interface_and_direction(
             charm, relation_name, RELATION_INTERFACE_NAME, RelationRole.provides
@@ -376,13 +376,18 @@ class GrafanaSourceProvider(Object):
         events = self._charm.on[relation_name]
 
         self._source_type = source_type
+        if source_type == "alertmanager":
+            if not extra_fields:
+                extra_fields = {"implementation": "prometheus"}
+            elif not extra_fields.get("implementation", None):
+                extra_fields["implementation"] = "prometheus"
+
+        self._extra_fields = extra_fields
 
         if not refresh_event:
             if len(self._charm.meta.containers) == 1:
                 container = list(self._charm.meta.containers.values())[0]
-                refresh_event = self._charm.on[
-                    container.name.replace("-", "_")
-                ].pebble_ready
+                refresh_event = self._charm.on[container.name.replace("-", "_")].pebble_ready
 
         if source_port and source_url:
             logger.warning(
@@ -442,6 +447,7 @@ class GrafanaSourceProvider(Object):
             "model_uuid": str(self._charm.model.uuid),
             "application": str(self._charm.model.app.name),
             "type": self._source_type,
+            "extra_fields": self._extra_fields,
         }
         return data
 
@@ -452,22 +458,8 @@ class GrafanaSourceProvider(Object):
         unit relation data for the Prometheus consumer.
         """
         for relation in self._charm.model.relations[self._relation_name]:
-            # network.bind_address can return `None` and give us a bad string, so make sure
-            # that it's valid before passing it. Otherwise, we'll catch is on pebble_ready.
-            # The provider side already skips adding it if `grafana_source_host` is not set,
-            # so no additional guards needed
-            url = None
-            if self._source_url:
-                url = self._source_url
-            else:
-                address = self._charm.model.get_binding(relation).network.bind_address
-                if address:
-                    url = "{}:{}".format(str(address), self._source_port)
-
-            # If _source_url was not set in the constructor and there are no units in the
-            # relation or pebble or address was not bound, this may not be set
-            if url:
-                relation.data[self._charm.unit]["grafana_source_host"] = url
+            url = self._source_url or "{}:{}".format(socket.getfqdn(), self._source_port)
+            relation.data[self._charm.unit]["grafana_source_host"] = url
 
 
 class GrafanaSourceConsumer(Object):
@@ -508,12 +500,8 @@ class GrafanaSourceConsumer(Object):
             sources_to_delete=set(),
         )
 
-        self.framework.observe(
-            events.relation_changed, self._on_grafana_source_relation_changed
-        )
-        self.framework.observe(
-            events.relation_departed, self._on_grafana_source_relation_departed
-        )
+        self.framework.observe(events.relation_changed, self._on_grafana_source_relation_changed)
+        self.framework.observe(events.relation_departed, self._on_grafana_source_relation_departed)
         self.framework.observe(
             self._charm.on[DEFAULT_PEER_NAME].relation_changed,
             self._on_grafana_peer_changed,
@@ -553,7 +541,7 @@ class GrafanaSourceConsumer(Object):
 
     def _get_source_config(self, rel: Relation):
         """Generate configuration from data stored in relation data by providers."""
-        source_data = json.loads(rel.data[rel.app].get("grafana_source_data", "{}"))
+        source_data = json.loads(rel.data[rel.app].get("grafana_source_data", "{}"))  # type: ignore
         if not source_data:
             return
 
@@ -569,9 +557,7 @@ class GrafanaSourceConsumer(Object):
             )
 
             host = (
-                "http://{}".format(host_addr)
-                if not re.match(r"^\w+://", host_addr)
-                else host_addr
+                "http://{}".format(host_addr) if not re.match(r"^\w+://", host_addr) else host_addr
             )
 
             host_data = {
@@ -580,6 +566,8 @@ class GrafanaSourceConsumer(Object):
                 "source_type": source_data["type"],
                 "url": host,
             }
+            if source_data.get("extra_fields", None):
+                host_data["extra_fields"] = source_data.get("extra_fields")
 
             if host_data["source_name"] in sources_to_delete:
                 sources_to_delete.remove(host_data["source_name"])
@@ -607,9 +595,7 @@ class GrafanaSourceConsumer(Object):
             hosts[unit.name] = host_address
         return hosts
 
-    def _on_grafana_source_relation_departed(
-        self, event: RelationDepartedEvent
-    ) -> None:
+    def _on_grafana_source_relation_departed(self, event: RelationDepartedEvent) -> None:
         """Update job config when providers depart.
 
         When a Grafana source provider departs, the configuration
@@ -640,9 +626,7 @@ class GrafanaSourceConsumer(Object):
         if removed_source:
             if event.unit:
                 # Remove one unit only
-                dead_unit = [s for s in removed_source if s["unit"] == event.unit.name][
-                    0
-                ]
+                dead_unit = [s for s in removed_source if s["unit"] == event.unit.name][0]
                 self._remove_source(dead_unit["source_name"])
 
                 # Re-update the list of stored sources
